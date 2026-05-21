@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { Plus, Trash2, GripVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-export function ScenarioForm({ userId }: { userId: string }) {
+export function ScenarioForm() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [role, setRole] = useState("");

@@ -1,5 +1,12 @@
--- Tavor – Arabic Ulpan: Database Schema
--- Run in Supabase SQL Editor
+-- ============================================================
+-- Tavor – Arabic Ulpan: Full Setup Script
+-- Paste this entire file into Supabase → SQL Editor and run once.
+-- ============================================================
+
+
+-- ============================================================
+-- TABLES
+-- ============================================================
 
 -- Users (extends Supabase auth.users)
 CREATE TABLE IF NOT EXISTS public.users (
@@ -51,10 +58,13 @@ CREATE TABLE IF NOT EXISTS public.vocabulary (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Full-text search index on vocabulary
 CREATE INDEX IF NOT EXISTS vocabulary_search_idx
   ON public.vocabulary USING gin(
-    to_tsvector('simple', coalesce(arabic_text,'') || ' ' || coalesce(hebrew_translation,'') || ' ' || coalesce(transliteration,''))
+    to_tsvector('simple',
+      coalesce(arabic_text,'') || ' ' ||
+      coalesce(hebrew_translation,'') || ' ' ||
+      coalesce(transliteration,'')
+    )
   );
 
 -- Exams
@@ -96,7 +106,7 @@ CREATE TABLE IF NOT EXISTS public.scenarios (
   student_description TEXT,
   student_role TEXT,
   ai_instructions TEXT,
-  voice_instructions TEXT,      -- Instructions specific to the voice agent (pace, dialect, error handling)
+  voice_instructions TEXT,
   hints JSONB,
   difficulty TEXT CHECK (difficulty IN ('easy','medium','hard')),
   category TEXT CHECK (category IN ('checkpoint','interrogation','market','prison','other')),
@@ -122,69 +132,10 @@ CREATE TABLE IF NOT EXISTS public.ai_sessions (
 CREATE TABLE IF NOT EXISTS public.ai_credits (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE UNIQUE,
-  monthly_limit INTEGER DEFAULT 50,
+  monthly_limit INTEGER DEFAULT 30,
   current_month_usage INTEGER DEFAULT 0,
   last_reset_date DATE DEFAULT CURRENT_DATE
 );
-
--- ============================================================
--- Row Level Security
--- ============================================================
-
-ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.user_course_access ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.handbooks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.vocabulary ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.exams ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.exam_submissions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.grades ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.scenarios ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.ai_sessions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.ai_credits ENABLE ROW LEVEL SECURITY;
-
--- Users: authenticated users can read own row; service role manages writes
-CREATE POLICY "users_select_own" ON public.users
-  FOR SELECT TO authenticated USING (auth.uid() = id);
-
--- Shared content: all authenticated users can read
-CREATE POLICY "vocabulary_select_all" ON public.vocabulary
-  FOR SELECT TO authenticated USING (true);
-
-CREATE POLICY "scenarios_select_active" ON public.scenarios
-  FOR SELECT TO authenticated USING (is_active = true);
-
-CREATE POLICY "exams_select_all" ON public.exams
-  FOR SELECT TO authenticated USING (true);
-
-CREATE POLICY "handbooks_select_all" ON public.handbooks
-  FOR SELECT TO authenticated USING (true);
-
-CREATE POLICY "courses_select_all" ON public.courses
-  FOR SELECT TO authenticated USING (true);
-
-CREATE POLICY "user_course_access_select" ON public.user_course_access
-  FOR SELECT TO authenticated USING (true);
-
--- Student-scoped data: own rows only
-CREATE POLICY "exam_submissions_select_own" ON public.exam_submissions
-  FOR SELECT TO authenticated USING (auth.uid() = user_id);
-
-CREATE POLICY "grades_select_own" ON public.grades
-  FOR SELECT TO authenticated USING (auth.uid() = user_id);
-
-CREATE POLICY "ai_sessions_select_own" ON public.ai_sessions
-  FOR SELECT TO authenticated USING (auth.uid() = user_id);
-
-CREATE POLICY "ai_credits_select_own" ON public.ai_credits
-  FOR SELECT TO authenticated USING (auth.uid() = user_id);
-
--- NOTE: All INSERT/UPDATE/DELETE operations use the service_role key
--- (server-side API routes), which bypasses RLS automatically.
-
--- ============================================================
--- Phase 2 / 3 tables
--- ============================================================
 
 -- Cultural enrichment content
 CREATE TABLE IF NOT EXISTS public.enrichment (
@@ -217,7 +168,7 @@ CREATE TABLE IF NOT EXISTS public.user_streaks (
   last_activity_date DATE DEFAULT CURRENT_DATE
 );
 
--- Arabic letter mastery (one row per learned letter)
+-- Arabic letter mastery (one row per learned letter per user)
 CREATE TABLE IF NOT EXISTS public.letter_progress (
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
   letter TEXT NOT NULL,
@@ -225,14 +176,66 @@ CREATE TABLE IF NOT EXISTS public.letter_progress (
   PRIMARY KEY (user_id, letter)
 );
 
--- RLS for new tables
-ALTER TABLE public.enrichment ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.user_points ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.user_streaks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.letter_progress ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================
+-- ROW LEVEL SECURITY
+-- ============================================================
+
+ALTER TABLE public.users              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.courses            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_course_access ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.handbooks          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.vocabulary         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.exams              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.exam_submissions   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.grades             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.scenarios          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ai_sessions        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ai_credits         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.enrichment         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_points        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_streaks       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.letter_progress    ENABLE ROW LEVEL SECURITY;
+
+-- Own profile
+CREATE POLICY "users_select_own" ON public.users
+  FOR SELECT TO authenticated USING (auth.uid() = id);
+
+-- Shared read-only content
+CREATE POLICY "courses_select_all" ON public.courses
+  FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "user_course_access_select" ON public.user_course_access
+  FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "handbooks_select_all" ON public.handbooks
+  FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "vocabulary_select_all" ON public.vocabulary
+  FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "exams_select_all" ON public.exams
+  FOR SELECT TO authenticated USING (true);
+
+-- Students see only active scenarios; service role (admin pages) sees all
+CREATE POLICY "scenarios_select_active" ON public.scenarios
+  FOR SELECT TO authenticated USING (is_active = true);
 
 CREATE POLICY "enrichment_select_active" ON public.enrichment
   FOR SELECT TO authenticated USING (is_active = true);
+
+-- Student-scoped rows: own data only
+CREATE POLICY "exam_submissions_select_own" ON public.exam_submissions
+  FOR SELECT TO authenticated USING (auth.uid() = user_id);
+
+CREATE POLICY "grades_select_own" ON public.grades
+  FOR SELECT TO authenticated USING (auth.uid() = user_id);
+
+CREATE POLICY "ai_sessions_select_own" ON public.ai_sessions
+  FOR SELECT TO authenticated USING (auth.uid() = user_id);
+
+CREATE POLICY "ai_credits_select_own" ON public.ai_credits
+  FOR SELECT TO authenticated USING (auth.uid() = user_id);
 
 CREATE POLICY "user_points_select_own" ON public.user_points
   FOR SELECT TO authenticated USING (auth.uid() = user_id);
@@ -243,27 +246,56 @@ CREATE POLICY "user_streaks_select_own" ON public.user_streaks
 CREATE POLICY "letter_progress_select_own" ON public.letter_progress
   FOR SELECT TO authenticated USING (auth.uid() = user_id);
 
--- Leaderboard RPC – returns aggregated points per user for a course (bypasses RLS)
-CREATE OR REPLACE FUNCTION public.get_leaderboard(p_course_id UUID DEFAULT NULL, p_period TEXT DEFAULT 'all')
+-- All INSERT / UPDATE / DELETE go through server-side API routes
+-- using the service_role key, which bypasses RLS automatically.
+
+
+-- ============================================================
+-- STORAGE BUCKETS
+-- ============================================================
+
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES
+  ('handbooks',             'handbooks',             false, 52428800, ARRAY['application/pdf']),
+  ('vocabulary-recordings', 'vocabulary-recordings', false, 10485760, ARRAY['audio/mpeg','audio/mp4','audio/wav','audio/ogg','audio/webm']),
+  ('exams',                 'exams',                 false, 52428800, ARRAY['application/pdf'])
+ON CONFLICT (id) DO NOTHING;
+
+-- Authenticated users can read their own files via signed URLs (generated server-side).
+-- Service role handles all uploads — no additional storage policies needed.
+
+
+-- ============================================================
+-- FUNCTIONS
+-- ============================================================
+
+-- Leaderboard: aggregates points per user for a course and period.
+-- SECURITY DEFINER lets it read across all users regardless of RLS.
+CREATE OR REPLACE FUNCTION public.get_leaderboard(
+  p_course_id UUID DEFAULT NULL,
+  p_period    TEXT DEFAULT 'all'
+)
 RETURNS TABLE(user_id UUID, name TEXT, total_points BIGINT, rank BIGINT)
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   v_since TIMESTAMPTZ;
 BEGIN
-  IF p_period = 'week' THEN v_since := date_trunc('week', now());
+  IF    p_period = 'week'  THEN v_since := date_trunc('week',  now());
   ELSIF p_period = 'month' THEN v_since := date_trunc('month', now());
-  ELSE v_since := '1970-01-01'::TIMESTAMPTZ;
+  ELSE                          v_since := '1970-01-01'::TIMESTAMPTZ;
   END IF;
 
   RETURN QUERY
   SELECT
-    u.id AS user_id,
+    u.id   AS user_id,
     u.name,
     COALESCE(SUM(up.points), 0) AS total_points,
     RANK() OVER (ORDER BY COALESCE(SUM(up.points), 0) DESC) AS rank
   FROM public.users u
-  LEFT JOIN public.user_points up ON up.user_id = u.id AND up.created_at >= v_since
-  LEFT JOIN public.user_course_access uca ON uca.user_id = u.id
+  LEFT JOIN public.user_points up
+         ON up.user_id = u.id AND up.created_at >= v_since
+  LEFT JOIN public.user_course_access uca
+         ON uca.user_id = u.id
   WHERE u.role = 'student'
     AND (p_course_id IS NULL OR uca.course_id = p_course_id)
   GROUP BY u.id, u.name
@@ -272,39 +304,40 @@ BEGIN
 END;
 $$;
 
--- ============================================================
--- Seed data – default courses
--- ============================================================
-INSERT INTO public.courses (name, type, is_active) VALUES
-  ('קורס ערבית שנתי', 'year', true),
-  ('קורס ערבית 8 שבועות', '8_weeks', true),
-  ('קורס ערבית 5 שבועות', '5_weeks', true)
-ON CONFLICT DO NOTHING;
-
--- ============================================================
--- Migrations (run if upgrading an existing installation)
--- ============================================================
-ALTER TABLE public.scenarios ADD COLUMN IF NOT EXISTS voice_instructions TEXT;
-ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS show_leaderboard BOOLEAN DEFAULT true;
-
--- ============================================================
--- Monthly AI credits auto-reset
--- ============================================================
--- Call this function via a Supabase cron job (pg_cron) on the 1st of each month.
--- In Supabase dashboard: Database → Extensions → enable pg_cron, then:
---   SELECT cron.schedule('reset-ai-credits', '0 0 1 * *', 'SELECT reset_monthly_ai_credits()');
+-- Monthly AI credit reset.
+-- Wire this up to a cron job (see bottom of file).
 CREATE OR REPLACE FUNCTION public.reset_monthly_ai_credits()
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
   UPDATE public.ai_credits
   SET current_month_usage = 0,
-      last_reset_date = CURRENT_DATE
+      last_reset_date     = CURRENT_DATE
   WHERE last_reset_date < date_trunc('month', CURRENT_DATE);
 END;
 $$;
 
+
 -- ============================================================
--- Storage buckets (run separately in Supabase dashboard)
+-- CREATE YOUR FIRST ADMIN USER
 -- ============================================================
--- Create buckets: handbooks, vocabulary-recordings, exams
--- Set each to private (signed URLs required for access)
+-- 1. Go to Supabase → Authentication → Users → "Add user"
+-- 2. Fill in email + password, click Create
+-- 3. Copy the UUID from the user row
+-- 4. Uncomment the line below, paste the UUID and name, then run it:
+--
+-- INSERT INTO public.users (id, name, role)
+-- VALUES ('<paste-uuid-here>', 'שם המנהל', 'admin');
+
+
+-- ============================================================
+-- OPTIONAL: AUTO-RESET AI CREDITS ON THE 1ST OF EACH MONTH
+-- ============================================================
+-- Requires the pg_cron extension:
+--   Supabase → Database → Extensions → search "pg_cron" → Enable
+-- Then run:
+--
+-- SELECT cron.schedule(
+--   'reset-ai-credits',
+--   '0 0 1 * *',
+--   'SELECT public.reset_monthly_ai_credits()'
+-- );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CATEGORY_LABELS, type VocabularyCategory } from "@/types";
@@ -61,8 +61,8 @@ export function VocabularyTable({ words }: Props) {
         </thead>
         <tbody>
           {words.map((w) => (
-            <>
-              <tr key={w.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+            <React.Fragment key={w.id}>
+              <tr className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                 <td
                   className="p-2.5 font-medium text-base"
                   dir="rtl"
@@ -114,7 +114,7 @@ export function VocabularyTable({ words }: Props) {
                 </td>
               </tr>
               {editingId === w.id && (
-                <tr key={`${w.id}-edit`} className="border-b last:border-0 bg-muted/20">
+                <tr className="border-b last:border-0 bg-muted/20">
                   <td colSpan={6} className="p-3 bg-muted/20">
                     <EditWordForm
                       word={w}
@@ -123,7 +123,7 @@ export function VocabularyTable({ words }: Props) {
                   </td>
                 </tr>
               )}
-            </>
+            </React.Fragment>
           ))}
         </tbody>
       </table>
