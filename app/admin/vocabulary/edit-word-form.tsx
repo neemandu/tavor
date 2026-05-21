@@ -1,0 +1,162 @@
+"use client";
+
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CATEGORY_LABELS, type VocabularyCategory } from "@/types";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
+interface WordProps {
+  id: string;
+  arabic_text: string;
+  transliteration: string | null;
+  hebrew_translation: string;
+  category: string | null;
+  inflections: Record<string, string> | null;
+}
+
+interface Props {
+  word: WordProps;
+  onClose: () => void;
+}
+
+const INFLECTION_KEYS: { key: string; label: string }[] = [
+  { key: "ריבוי", label: "ריבוי" },
+  { key: "זכר", label: "זכר" },
+  { key: "נקבה", label: "נקבה" },
+  { key: "עבר", label: "עבר" },
+  { key: "עתיד", label: "עתיד" },
+  { key: "ציווי", label: "ציווי" },
+];
+
+export function EditWordForm({ word, onClose }: Props) {
+  const [arabic, setArabic] = useState(word.arabic_text);
+  const [transliteration, setTransliteration] = useState(word.transliteration ?? "");
+  const [hebrew, setHebrew] = useState(word.hebrew_translation);
+  const [category, setCategory] = useState<VocabularyCategory | "">(
+    (word.category as VocabularyCategory) ?? ""
+  );
+  const [inflections, setInflections] = useState<Record<string, string>>(
+    word.inflections ?? {}
+  );
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  function updateInflection(key: string, value: string) {
+    setInflections((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!arabic || !hebrew) return;
+    setLoading(true);
+    try {
+      const filteredInflections = Object.fromEntries(
+        Object.entries(inflections).filter(([, v]) => v.trim() !== "")
+      );
+
+      const res = await fetch(`/api/admin/vocabulary/${word.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          arabic_text: arabic,
+          transliteration: transliteration || null,
+          hebrew_translation: hebrew,
+          category: category || null,
+          inflections: Object.keys(filteredInflections).length > 0 ? filteredInflections : null,
+        }),
+      });
+      if (!res.ok) throw new Error("שגיאה בעדכון");
+      toast.success("מילה עודכנה בהצלחה");
+      router.refresh();
+      onClose();
+    } catch {
+      toast.error("שגיאה בעדכון המילה");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="p-3 bg-muted/30 rounded-md space-y-3 border">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs">ערבית *</Label>
+          <Input
+            value={arabic}
+            onChange={(e) => setArabic(e.target.value)}
+            dir="rtl"
+            lang="ar"
+            placeholder="كلمة"
+            required
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">תעתיק</Label>
+          <Input
+            value={transliteration}
+            onChange={(e) => setTransliteration(e.target.value)}
+            dir="ltr"
+            placeholder="kalima"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">עברית *</Label>
+          <Input
+            value={hebrew}
+            onChange={(e) => setHebrew(e.target.value)}
+            placeholder="מילה"
+            required
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">קטגוריה</Label>
+          <Select value={category} onValueChange={(v) => setCategory((v ?? "") as VocabularyCategory)}>
+            <SelectTrigger>
+              <SelectValue placeholder="בחר..." />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <details className="group">
+        <summary className="text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors list-none flex items-center gap-1">
+          <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
+          נטיות (אופציונלי)
+        </summary>
+        <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+          {INFLECTION_KEYS.map(({ key, label }) => (
+            <div key={key} className="space-y-1">
+              <Label className="text-xs">{label}</Label>
+              <Input
+                value={inflections[key] ?? ""}
+                onChange={(e) => updateInflection(key, e.target.value)}
+                placeholder=""
+                dir="rtl"
+                lang="ar"
+                className="text-sm"
+              />
+            </div>
+          ))}
+        </div>
+      </details>
+
+      <div className="flex gap-2">
+        <Button type="submit" size="sm" disabled={loading}>
+          {loading ? "שומר..." : "שמור"}
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={onClose}>
+          ביטול
+        </Button>
+      </div>
+    </form>
+  );
+}
