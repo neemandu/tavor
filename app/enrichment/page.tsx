@@ -5,6 +5,7 @@ import { StudentShell } from "@/components/student-shell";
 import { EnrichmentCard, type EnrichmentItem } from "./enrichment-card";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { Globe } from "lucide-react";
 
 const CATEGORIES = [
   { value: "all", label: "כולם" },
@@ -70,8 +71,10 @@ export default async function EnrichmentPage({ searchParams }: PageProps) {
 
         {/* Enrichment grid */}
         {items.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <p>אין תכני העשרה בקטגוריה זו</p>
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground text-center space-y-2">
+            <Globe className="size-10 opacity-30" />
+            <p className="font-medium">אין תכנים בקטגוריה זו</p>
+            <p className="text-sm">בחר קטגוריה אחרת או חזור מאוחר יותר</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">

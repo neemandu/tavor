@@ -105,7 +105,7 @@ export function GradeTable({ examId, students, submissions, grades }: Props) {
           </thead>
           <tbody>
             {students.map((s) => (
-              <tr key={s.id} className="border-b last:border-0">
+              <tr key={s.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                 <td className="p-2.5 font-medium">{s.name}</td>
                 <td className="p-2.5">
                   {submittedIds.has(s.id) ? (

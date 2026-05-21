@@ -68,7 +68,7 @@ export default async function ExamsPage() {
                         )}
                       </div>
                       {submitted && (
-                        <Badge variant="secondary" className="text-xs shrink-0">
+                        <Badge className="text-xs shrink-0 bg-green-100 text-green-700 border-green-200">
                           הוגש ✓
                         </Badge>
                       )}
@@ -114,7 +114,7 @@ export default async function ExamsPage() {
                   </thead>
                   <tbody>
                     {grades.map((grade) => (
-                      <tr key={grade.exam_id} className="border-b last:border-0">
+                      <tr key={grade.exam_id} className="border-b last:border-0 odd:bg-muted/20">
                         <td className="p-3">
                           {(grade.exams as unknown as { name: string } | null)?.name ?? "—"}
                         </td>
@@ -131,7 +131,7 @@ export default async function ExamsPage() {
                                 : "text-red-600"
                             }
                           >
-                            {grade.score}
+                            {grade.score}/100
                           </span>
                         </td>
                       </tr>

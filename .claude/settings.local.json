@@ -15,7 +15,8 @@
       "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Projects\\\\Tavor - Yehuda\\\\app\\\\admin\\\\courses\")",
       "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Projects\\\\Tavor - Yehuda\\\\app\\\\more\")",
       "Bash(git init *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

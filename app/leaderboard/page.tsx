@@ -132,8 +132,10 @@ export default async function LeaderboardPage({
 
         {rows.length === 0 ? (
           <Card>
-            <CardContent className="p-8 text-center text-muted-foreground text-sm">
-              אין נתונים עדיין. התחל לצבור נקודות!
+            <CardContent className="p-8 text-center text-muted-foreground space-y-2">
+              <Trophy className="size-10 mx-auto opacity-30" />
+              <p className="font-medium">אין נתונים עדיין</p>
+              <p className="text-sm">צבור נקודות על ידי תרגול AI, לימוד אותיות ומבחנים</p>
             </CardContent>
           </Card>
         ) : (
@@ -150,10 +152,7 @@ export default async function LeaderboardPage({
                   return (
                     <div
                       key={entry.user_id}
-                      className={cn(
-                        "flex flex-col items-center gap-1",
-                        isFirst && "order-first"
-                      )}
+                      className="flex flex-col items-center gap-1"
                     >
                       <span className="text-2xl">{PODIUM_MEDALS[rankIndex]}</span>
                       <p className="text-xs font-semibold text-center max-w-[72px] truncate">

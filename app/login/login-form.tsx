@@ -38,51 +38,60 @@ export function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-muted/20">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">תבור</CardTitle>
-          <p className="text-sm text-muted-foreground">אולפן ערבית</p>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="email">אימייל</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                required
-                autoComplete="email"
-                dir="ltr"
-              />
-            </div>
+    <div className="min-h-screen flex flex-col bg-muted/20">
+      {/* Branded hero section */}
+      <div className="bg-gradient-to-b from-primary to-primary/80 text-primary-foreground flex flex-col items-center justify-center pt-16 pb-12 px-4" style={{ minHeight: "35%" }}>
+        <div className="text-4xl mb-3">★</div>
+        <h1 className="text-4xl font-bold tracking-wide">תבור</h1>
+        <p className="text-sm mt-2 opacity-80">אולפן ערבית - כוחות הביטחון</p>
+      </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="password">סיסמה</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-                dir="ltr"
-              />
-            </div>
+      {/* Form card floating over the hero */}
+      <div className="-mt-6 mx-4 relative z-10 max-w-sm w-full self-center">
+        <Card className="w-full shadow-lg">
+          <CardHeader className="text-center pb-2">
+            <CardTitle className="text-xl">כניסה למערכת</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="email">אימייל</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  required
+                  autoComplete="email"
+                  dir="ltr"
+                />
+              </div>
 
-            {error && (
-              <p className="text-sm text-destructive text-center">{error}</p>
-            )}
+              <div className="space-y-1.5">
+                <Label htmlFor="password">סיסמה</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  dir="ltr"
+                />
+              </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "מתחבר..." : "כניסה"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              {error && (
+                <p className="text-sm text-destructive text-center">{error}</p>
+              )}
+
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "מתחבר..." : "כניסה"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

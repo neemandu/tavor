@@ -166,7 +166,7 @@ export default async function StudentHome() {
                         >
                           {row.name}
                           {row.user_id === user!.id && (
-                            <span className="mr-1 text-xs font-normal text-muted-foreground">
+                            <span className="ms-1 text-xs font-normal text-muted-foreground">
                               (אתה)
                             </span>
                           )}
@@ -180,9 +180,9 @@ export default async function StudentHome() {
                 </ul>
                 <Link
                   href="/leaderboard"
-                  className="mt-2 block text-xs text-primary text-center hover:underline"
+                  className="mt-2 block text-xs text-primary text-center hover:underline font-medium"
                 >
-                  ראה לוח שיאים מלא ←
+                  ראה לוח שיאים מלא
                 </Link>
               </CardContent>
             </Card>
@@ -194,7 +194,7 @@ export default async function StudentHome() {
           <div className="grid grid-cols-2 gap-3">
             {quickActions.map(({ href, label, icon: Icon, color }) => (
               <Link key={href} href={href}>
-                <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
+                <Card className="hover:bg-muted/50 transition-colors cursor-pointer active:scale-95">
                   <CardContent className="p-5 flex flex-col items-center gap-2.5">
                     <Icon className={`size-8 ${color}`} />
                     <span className="text-sm font-medium text-center">{label}</span>

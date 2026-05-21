@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, FileText, MessageSquare, Bell } from "lucide-react";
+import { Users, FileText, MessageSquare, Bell, Brain } from "lucide-react";
 
 export default async function AdminDashboard() {
   const supabase = await createClient();
@@ -31,9 +31,27 @@ export default async function AdminDashboard() {
   ]);
 
   const stats = [
-    { label: "חניכים פעילים", value: studentCount ?? 0, icon: Users },
-    { label: "מבחנים", value: examCount ?? 0, icon: FileText },
-    { label: "שיחות AI", value: sessionCount ?? 0, icon: MessageSquare },
+    {
+      label: "חניכים פעילים",
+      value: studentCount ?? 0,
+      icon: Users,
+      iconClass: "text-blue-600",
+      bgClass: "bg-blue-50",
+    },
+    {
+      label: "מבחנים",
+      value: examCount ?? 0,
+      icon: FileText,
+      iconClass: "text-orange-600",
+      bgClass: "bg-orange-50",
+    },
+    {
+      label: "שיחות AI",
+      value: sessionCount ?? 0,
+      icon: Brain,
+      iconClass: "text-purple-600",
+      bgClass: "bg-purple-50",
+    },
   ];
 
   return (
@@ -42,11 +60,11 @@ export default async function AdminDashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {stats.map(({ label, value, icon: Icon }) => (
+        {stats.map(({ label, value, icon: Icon, iconClass, bgClass }) => (
           <Card key={label}>
             <CardContent className="p-5 flex items-center gap-4">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Icon className="size-5 text-primary" />
+              <div className={`p-2.5 ${bgClass} rounded-lg shrink-0`}>
+                <Icon className={`size-5 ${iconClass}`} />
               </div>
               <div>
                 <p className="text-2xl font-bold">{value}</p>

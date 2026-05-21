@@ -26,7 +26,10 @@ export default async function AdminStudentsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">חניכים</h1>
+      <div>
+        <h1 className="text-2xl font-bold">חניכים</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">{students.length} חניכים</p>
+      </div>
 
       <CreateStudentForm courses={courses} />
 
@@ -80,9 +83,9 @@ export default async function AdminStudentsPage() {
                       <td className="p-3">
                         <Link
                           href={`/admin/students/${s.id}`}
-                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                          className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
                         >
-                          <ExternalLink className="size-3" />
+                          <ExternalLink className="size-3.5 shrink-0" />
                           צפה בפרופיל
                         </Link>
                       </td>

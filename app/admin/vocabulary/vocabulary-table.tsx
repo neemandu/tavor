@@ -62,16 +62,16 @@ export function VocabularyTable({ words }: Props) {
         <tbody>
           {words.map((w) => (
             <>
-              <tr key={w.id} className="border-b last:border-0">
+              <tr key={w.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                 <td
-                  className="p-2.5"
+                  className="p-2.5 font-medium text-base"
                   dir="rtl"
                   lang="ar"
                   style={{ fontFamily: "var(--font-noto-arabic)" }}
                 >
                   {w.arabic_text}
                 </td>
-                <td className="p-2.5 text-muted-foreground italic" dir="ltr">
+                <td className="p-2.5 text-muted-foreground italic text-xs" dir="ltr">
                   {w.transliteration ?? "—"}
                 </td>
                 <td className="p-2.5">{w.hebrew_translation}</td>
@@ -81,19 +81,19 @@ export function VocabularyTable({ words }: Props) {
                       {CATEGORY_LABELS[w.category as VocabularyCategory]}
                     </Badge>
                   ) : (
-                    "—"
+                    <span className="text-muted-foreground">—</span>
                   )}
                 </td>
                 <td className="p-2.5">
                   <RecordingUpload wordId={w.id} hasRecording={!!w.recording_path} />
                 </td>
                 <td className="p-2.5">
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-0.5">
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="size-7"
+                      className="size-7 text-muted-foreground hover:text-foreground"
                       onClick={() => setEditingId(editingId === w.id ? null : w.id)}
                       aria-label="ערוך מילה"
                     >
@@ -103,7 +103,7 @@ export function VocabularyTable({ words }: Props) {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="size-7 text-destructive hover:text-destructive"
+                      className="size-7 text-muted-foreground hover:text-destructive"
                       onClick={() => handleDelete(w)}
                       disabled={deletingId === w.id}
                       aria-label="מחק מילה"
@@ -114,8 +114,8 @@ export function VocabularyTable({ words }: Props) {
                 </td>
               </tr>
               {editingId === w.id && (
-                <tr key={`${w.id}-edit`} className="border-b last:border-0">
-                  <td colSpan={6} className="p-2">
+                <tr key={`${w.id}-edit`} className="border-b last:border-0 bg-muted/20">
+                  <td colSpan={6} className="p-3">
                     <EditWordForm
                       word={w}
                       onClose={() => setEditingId(null)}

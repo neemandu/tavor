@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { UploadExamForm } from "./upload-exam-form";
 import { GradeTable } from "./grade-table";
 import { CourseFilterBar } from "./course-filter-bar";
-import { FileText } from "lucide-react";
+import { FileText, CalendarDays, Users } from "lucide-react";
 
 export default async function AdminExamsPage({
   searchParams,
@@ -94,17 +94,22 @@ export default async function AdminExamsPage({
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-2 flex-wrap">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <FileText className="size-4" />
+                  <FileText className="size-4 text-orange-600" />
                   {exam.name}
                 </CardTitle>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3 flex-wrap">
                   {exam.due_date && (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <CalendarDays className="size-3.5 text-muted-foreground" />
                       הגשה עד: {new Date(exam.due_date).toLocaleDateString("he-IL")}
                     </span>
                   )}
-                  <Badge variant="secondary" className="text-xs">
-                    {examSubmissions.length} הגשות
+                  <Badge
+                    variant={examSubmissions.length > 0 ? "default" : "secondary"}
+                    className="text-xs inline-flex items-center gap-1"
+                  >
+                    <Users className="size-3" />
+                    {examSubmissions.length} / {students.length} הגישו
                   </Badge>
                 </div>
               </div>

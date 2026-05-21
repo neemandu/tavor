@@ -11,7 +11,7 @@ import {
   type ScenarioDifficulty,
   type ScenarioCategory,
 } from "@/types";
-import { Pencil } from "lucide-react";
+import { Pencil, CheckCircle2, XCircle } from "lucide-react";
 import { ScenarioToggle } from "./scenario-toggle";
 import { ScenarioEditForm } from "./scenario-edit-form";
 
@@ -30,20 +30,38 @@ export function ScenariosList({ scenarios }: Props) {
     <div className="space-y-3">
       {scenarios.map((scenario) => (
         <div key={scenario.id} className="space-y-2">
-          <Card>
+          <Card className={scenario.is_active ? "" : "opacity-60"}>
             <CardContent className="p-4 flex items-start gap-3">
-              <div className="flex-1 space-y-1">
+              <div className="flex-1 space-y-1.5 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-semibold">{scenario.name}</p>
+                  <p className="font-semibold text-base leading-tight">{scenario.name}</p>
+                  {scenario.is_active ? (
+                    <span className="inline-flex items-center gap-1 text-xs text-green-700 font-medium">
+                      <CheckCircle2 className="size-3.5" />
+                      פעיל
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                      <XCircle className="size-3.5" />
+                      לא פעיל
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {scenario.category && (
+                    <Badge variant="secondary" className="text-xs">
+                      {SCENARIO_CATEGORY_LABELS[scenario.category as ScenarioCategory]}
+                    </Badge>
+                  )}
                   {scenario.difficulty && (
                     <Badge variant="outline" className="text-xs">
                       {DIFFICULTY_LABELS[scenario.difficulty as ScenarioDifficulty]}
                     </Badge>
                   )}
-                  {scenario.category && (
-                    <Badge variant="outline" className="text-xs">
-                      {SCENARIO_CATEGORY_LABELS[scenario.category as ScenarioCategory]}
-                    </Badge>
+                  {scenario.hints && (
+                    <span className="text-xs text-muted-foreground">
+                      {(scenario.hints as string[]).length} הכוונות
+                    </span>
                   )}
                 </div>
                 {scenario.student_description && (
@@ -51,22 +69,18 @@ export function ScenariosList({ scenarios }: Props) {
                     {scenario.student_description}
                   </p>
                 )}
-                {scenario.hints && (
-                  <p className="text-xs text-muted-foreground">
-                    {(scenario.hints as string[]).length} הכוונות
-                  </p>
-                )}
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <Button
                   type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-8"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 h-8"
                   onClick={() => setEditingId(editingId === scenario.id ? null : scenario.id)}
                   aria-label="ערוך תרחיש"
                 >
-                  <Pencil className="size-4" />
+                  <Pencil className="size-3.5" />
+                  ערוך
                 </Button>
                 <ScenarioToggle
                   scenarioId={scenario.id}

@@ -62,19 +62,23 @@ export default async function AIPracticePage() {
         </div>
 
         {/* Mode cards */}
-        <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
+        <div className="grid grid-cols-3 gap-2">
           {modes.map((mode) => {
             const Icon = mode.icon;
             const card = (
               <Card
-                className={`shrink-0 w-36 cursor-pointer transition-colors hover:bg-muted/50 ${
-                  mode.active ? "border-primary" : ""
+                className={`cursor-pointer transition-colors hover:bg-muted/50 ${
+                  mode.active ? "border-2 border-primary bg-primary/5" : ""
                 }`}
               >
-                <CardContent className="p-3 space-y-2">
-                  <Icon
-                    className={`size-6 ${mode.active ? "text-primary" : "text-muted-foreground"}`}
-                  />
+                <CardContent className="p-3 space-y-1.5">
+                  {mode.active ? (
+                    <span className="bg-primary/10 rounded-md p-1.5 inline-flex">
+                      <Icon className="size-5 text-primary" />
+                    </span>
+                  ) : (
+                    <Icon className="size-5 text-muted-foreground" />
+                  )}
                   <p className="font-bold text-sm leading-tight">{mode.title}</p>
                   <p className="text-xs text-muted-foreground leading-snug">
                     {mode.description}

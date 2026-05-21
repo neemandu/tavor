@@ -4,10 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { StudentShell } from "@/components/student-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { CATEGORY_LABELS, type VocabularyCategory } from "@/types";
 import { AudioPlayer } from "./audio-player";
-import { Search } from "lucide-react";
+import { VocabularySearchBar } from "./search-bar";
 
 interface PageProps {
   searchParams: Promise<{ q?: string; cat?: string }>;
@@ -44,16 +43,7 @@ export default async function VocabularyPage({ searchParams }: PageProps) {
         <h1 className="text-xl font-bold pt-2">אוצר מילים</h1>
 
         {/* Search */}
-        <form className="relative">
-          <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-          <Input
-            name="q"
-            defaultValue={q}
-            placeholder="חיפוש בעברית או ערבית..."
-            className="ps-9"
-          />
-          {cat && <input type="hidden" name="cat" value={cat} />}
-        </form>
+        <VocabularySearchBar defaultValue={q} />
 
         {/* Category filter */}
         <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
@@ -68,6 +58,11 @@ export default async function VocabularyPage({ searchParams }: PageProps) {
             </a>
           ))}
         </div>
+
+        {/* Word count */}
+        <p className="text-xs text-muted-foreground">
+          {q ? `נמצאו ${words.length} מילים` : `${words.length} מילים`}
+        </p>
 
         {/* Results */}
         {words.length === 0 ? (

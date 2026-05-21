@@ -11,28 +11,28 @@ const items = [
     icon: BookOpen,
     title: "חוברת לימוד",
     description: "צפה והורד את חוברת הלימוד שלך",
-    color: "bg-primary/10 text-primary",
+    color: "bg-blue-100 text-blue-600",
   },
   {
     href: "/letters",
     icon: PenLine,
     title: "לימוד אותיות",
     description: "תרגל כתיבת האלפבית הערבי",
-    color: "bg-primary/10 text-primary",
+    color: "bg-purple-100 text-purple-600",
   },
   {
     href: "/enrichment",
     icon: Globe,
     title: "תכני העשרה",
     description: "סרטונים, מאמרים ותרבות ערבית",
-    color: "bg-primary/10 text-primary",
+    color: "bg-green-100 text-green-600",
   },
   {
     href: "/leaderboard",
     icon: Trophy,
     title: "לוח שיאים",
     description: "ראה את הדירוג שלך בקורס",
-    color: "bg-primary/10 text-primary",
+    color: "bg-yellow-100 text-yellow-600",
   },
 ];
 

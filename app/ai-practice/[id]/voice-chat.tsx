@@ -378,7 +378,7 @@ export function VoiceChat({ scenario, userId }: Props) {
 
   // ── Chat phase ──────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-[calc(100vh-5rem)]">
+    <div className="flex flex-col h-svh">
 
       {/* Header */}
       <div className="p-3 border-b space-y-2 shrink-0">
@@ -441,7 +441,7 @@ export function VoiceChat({ scenario, userId }: Props) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-3 no-scrollbar">
         {messages.length === 0 && (
           <div className="text-center text-sm text-muted-foreground py-10 space-y-1">
             <Mic className="size-8 mx-auto opacity-20" />

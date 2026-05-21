@@ -43,20 +43,27 @@ export default async function HandbookPage() {
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">{handbook.file_name}</span>
               <a href={pdfUrl} download={handbook.file_name} target="_blank" rel="noreferrer">
-                <Button variant="outline" size="sm" className="gap-2">
+                <Button variant="default" size="sm" className="gap-2">
                   <Download className="size-4" />
                   הורדה
                 </Button>
               </a>
             </div>
 
-            <div className="rounded-lg border overflow-hidden" style={{ height: "70vh" }}>
+            <div className="flex flex-col rounded-lg border overflow-hidden">
               <iframe
                 src={pdfUrl}
-                className="w-full h-full"
+                className="flex-1 w-full rounded-md border-0"
+                style={{ minHeight: "70vh" }}
                 title="חוברת לימוד"
               />
             </div>
+            <p className="text-xs text-muted-foreground text-center py-1">
+              אם החוברת לא נטענת,{" "}
+              <a href={pdfUrl} target="_blank" rel="noreferrer" className="underline text-primary">
+                פתח ישירות
+              </a>
+            </p>
           </>
         ) : (
           <p className="text-muted-foreground text-sm">שגיאה בטעינת החוברת</p>

@@ -18,9 +18,9 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <main className="flex-1 overflow-y-auto pb-20">{children}</main>
+      <main className="flex-1 overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom))]">{children}</main>
 
-      <nav className="fixed bottom-0 inset-x-0 z-50 bg-background border-t border-border">
+      <nav className="fixed bottom-0 inset-x-0 z-50 bg-background border-t border-border h-auto pb-[env(safe-area-inset-bottom)]">
         <div className="grid grid-cols-5 h-16">
           {navItems.map(({ href, label, icon: Icon, exact }) => {
             const isActive = exact ? pathname === href : pathname.startsWith(href);
@@ -29,14 +29,20 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
                 key={href}
                 href={href}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 text-xs transition-colors",
+                  "flex flex-col items-center justify-center gap-0.5 text-xs transition-colors border-t-2",
                   isActive
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "text-primary border-primary"
+                    : "text-muted-foreground hover:text-foreground border-transparent"
                 )}
               >
-                <Icon className="size-5" />
-                <span>{label}</span>
+                {isActive ? (
+                  <span className="rounded-full bg-primary/10 p-1.5">
+                    <Icon className="size-5" />
+                  </span>
+                ) : (
+                  <Icon className="size-5" />
+                )}
+                <span className={isActive ? "font-medium" : "font-normal"}>{label}</span>
               </Link>
             );
           })}
