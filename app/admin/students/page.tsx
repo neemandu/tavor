@@ -44,12 +44,13 @@ export default async function AdminStudentsPage() {
           {students.length === 0 ? (
             <p className="p-4 text-sm text-muted-foreground">עדיין לא נוספו חניכים</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/40">
                   <th className="p-3 text-start font-medium">שם</th>
                   <th className="p-3 text-start font-medium">קורס</th>
-                  <th className="p-3 text-start font-medium">נרשם</th>
+                  <th className="p-3 text-start font-medium hidden sm:table-cell">נרשם</th>
                   <th className="p-3 text-start font-medium">פרופיל</th>
                 </tr>
               </thead>
@@ -77,7 +78,7 @@ export default async function AdminStudentsPage() {
                           <span className="text-muted-foreground">ללא קורס</span>
                         )}
                       </td>
-                      <td className="p-3 text-muted-foreground">
+                      <td className="p-3 text-muted-foreground hidden sm:table-cell">
                         {new Date(s.created_at).toLocaleDateString("he-IL")}
                       </td>
                       <td className="p-3">
@@ -86,7 +87,8 @@ export default async function AdminStudentsPage() {
                           className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
                         >
                           <ExternalLink className="size-3.5 shrink-0" />
-                          צפה בפרופיל
+                          <span className="hidden sm:inline">צפה בפרופיל</span>
+                          <span className="sm:hidden">פרופיל</span>
                         </Link>
                       </td>
                     </tr>
@@ -94,6 +96,7 @@ export default async function AdminStudentsPage() {
                 })}
               </tbody>
             </table>
+            </div>
           )}
         </CardContent>
       </Card>

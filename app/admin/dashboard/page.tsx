@@ -87,6 +87,7 @@ export default async function AdminDashboard() {
           {!recentSubmissions || recentSubmissions.length === 0 ? (
             <p className="p-4 text-sm text-muted-foreground">אין הגשות עדיין</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/40">
@@ -114,6 +115,7 @@ export default async function AdminDashboard() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </CardContent>
       </Card>

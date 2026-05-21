@@ -52,10 +52,10 @@ export function VocabularyTable({ words }: Props) {
         <thead>
           <tr className="border-b bg-muted/40">
             <th className="p-2.5 text-start font-medium">ערבית</th>
-            <th className="p-2.5 text-start font-medium">תעתיק</th>
+            <th className="p-2.5 text-start font-medium hidden md:table-cell">תעתיק</th>
             <th className="p-2.5 text-start font-medium">עברית</th>
-            <th className="p-2.5 text-start font-medium">קטגוריה</th>
-            <th className="p-2.5 text-start font-medium">הקלטה</th>
+            <th className="p-2.5 text-start font-medium hidden sm:table-cell">קטגוריה</th>
+            <th className="p-2.5 text-start font-medium hidden sm:table-cell">הקלטה</th>
             <th className="p-2.5 text-start font-medium">פעולות</th>
           </tr>
         </thead>
@@ -71,11 +71,11 @@ export function VocabularyTable({ words }: Props) {
                 >
                   {w.arabic_text}
                 </td>
-                <td className="p-2.5 text-muted-foreground italic text-xs" dir="ltr">
+                <td className="p-2.5 text-muted-foreground italic text-xs hidden md:table-cell" dir="ltr">
                   {w.transliteration ?? "—"}
                 </td>
                 <td className="p-2.5">{w.hebrew_translation}</td>
-                <td className="p-2.5">
+                <td className="p-2.5 hidden sm:table-cell">
                   {w.category ? (
                     <Badge variant="outline" className="text-xs">
                       {CATEGORY_LABELS[w.category as VocabularyCategory]}
@@ -84,7 +84,7 @@ export function VocabularyTable({ words }: Props) {
                     <span className="text-muted-foreground">—</span>
                   )}
                 </td>
-                <td className="p-2.5">
+                <td className="p-2.5 hidden sm:table-cell">
                   <RecordingUpload wordId={w.id} hasRecording={!!w.recording_path} />
                 </td>
                 <td className="p-2.5">
@@ -115,7 +115,7 @@ export function VocabularyTable({ words }: Props) {
               </tr>
               {editingId === w.id && (
                 <tr key={`${w.id}-edit`} className="border-b last:border-0 bg-muted/20">
-                  <td colSpan={6} className="p-3">
+                  <td colSpan={6} className="p-3 bg-muted/20">
                     <EditWordForm
                       word={w}
                       onClose={() => setEditingId(null)}
