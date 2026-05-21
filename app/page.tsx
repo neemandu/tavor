@@ -4,14 +4,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { StudentShell } from "@/components/student-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
-import {
-  BookOpen,
-  Search,
-  MessageSquare,
-  FileText,
-  Calendar,
-  Trophy,
-} from "lucide-react";
+import { BookOpen, Search, MessageSquare, FileText, Calendar, Trophy } from "lucide-react";
 
 type LeaderboardRow = {
   user_id: string;
@@ -88,30 +81,32 @@ export default async function StudentHome() {
   }
 
   const quickActions = [
-    { href: "/handbook", label: "חוברת לימוד", icon: BookOpen, color: "text-blue-600" },
-    { href: "/vocabulary", label: "אוצר מילים", icon: Search, color: "text-green-600" },
-    { href: "/ai-practice", label: "תרגול AI", icon: MessageSquare, color: "text-purple-600" },
-    { href: "/exams", label: "מבחנים וציונים", icon: FileText, color: "text-orange-600" },
+    { href: "/handbook", label: "חוברת לימוד", icon: BookOpen },
+    { href: "/vocabulary", label: "אוצר מילים", icon: Search },
+    { href: "/ai-practice", label: "תרגול AI", icon: MessageSquare },
+    { href: "/exams", label: "מבחנים וציונים", icon: FileText },
   ];
 
   return (
     <StudentShell>
-      <div className="p-4 space-y-5 max-w-lg mx-auto">
-        <div className="pt-4">
-          <h1 className="text-2xl font-bold">שלום, {name}</h1>
-          <p className="text-muted-foreground text-sm mt-1">ברוך הבא לאולפן ערבית תבור</p>
+      <div className="p-5 space-y-6 max-w-lg mx-auto">
+        {/* Greeting */}
+        <div className="pt-2">
+          <p className="text-sm text-muted-foreground">שלום,</p>
+          <h1 className="text-2xl font-bold mt-0.5">{name}</h1>
         </div>
 
         <div className="space-y-3">
+          {/* Upcoming exam */}
           {upcomingExam && (
-            <Card className="border-orange-200 bg-orange-50">
-              <CardContent className="p-3 flex items-start gap-3">
-                <Calendar className="size-5 text-orange-500 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs text-orange-600 font-medium">מבחן קרוב</p>
-                  <p className="font-semibold text-sm">{upcomingExam.name}</p>
+            <Card>
+              <CardContent className="p-4 flex items-start gap-3">
+                <Calendar className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground font-medium">מבחן קרוב</p>
+                  <p className="font-semibold text-sm mt-0.5 truncate">{upcomingExam.name}</p>
                   {upcomingExam.due_date && (
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {new Date(upcomingExam.due_date).toLocaleDateString("he-IL")}
                     </p>
                   )}
@@ -120,16 +115,17 @@ export default async function StudentHome() {
             </Card>
           )}
 
+          {/* AI Credits */}
           {creditsLeft !== null && (
             <Card>
-              <CardContent className="p-3 flex items-center justify-between">
+              <CardContent className="p-4 flex items-center justify-between gap-4">
                 <div>
                   <p className="text-xs text-muted-foreground">שיחות AI נותרו החודש</p>
-                  <p className="font-semibold text-sm">
+                  <p className="font-semibold text-sm mt-0.5">
                     {creditsLeft} מתוך {credits?.monthly_limit}
                   </p>
                 </div>
-                <MessageSquare className="size-8 text-purple-400 opacity-60" />
+                <MessageSquare className="size-5 text-muted-foreground shrink-0" />
               </CardContent>
             </Card>
           )}
@@ -137,42 +133,33 @@ export default async function StudentHome() {
           {/* Mini leaderboard */}
           {top3.length > 0 && (
             <Card>
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <Trophy className="size-4 text-yellow-500" />
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="size-4 text-muted-foreground" />
                     <p className="text-sm font-semibold">לוח שיאים</p>
                   </div>
                   {myEntry && (
                     <p className="text-xs text-muted-foreground">
-                      הדירוג שלך: #{myEntry.rank} · {myEntry.total_points} נק׳
+                      #{myEntry.rank} · {myEntry.total_points} נק׳
                     </p>
                   )}
                 </div>
-                <ul className="space-y-1.5">
+                <ul className="space-y-2.5 divide-y divide-border">
                   {top3.map((row) => (
-                    <li
-                      key={row.user_id}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-base leading-none">
+                    <li key={row.user_id} className="flex items-center justify-between pt-2 first:pt-0">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-base leading-none w-6 text-center">
                           {RANK_MEDALS[row.rank - 1] ?? `#${row.rank}`}
                         </span>
-                        <span
-                          className={`text-sm ${
-                            row.user_id === user!.id ? "font-semibold text-primary" : ""
-                          }`}
-                        >
+                        <span className={`text-sm ${row.user_id === user!.id ? "font-semibold" : "text-muted-foreground"}`}>
                           {row.name}
                           {row.user_id === user!.id && (
-                            <span className="ms-1 text-xs font-normal text-muted-foreground">
-                              (אתה)
-                            </span>
+                            <span className="ms-1 text-xs font-normal text-muted-foreground">(אתה)</span>
                           )}
                         </span>
                       </div>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-muted-foreground tabular-nums">
                         {row.total_points.toLocaleString("he-IL")} נק׳
                       </span>
                     </li>
@@ -180,24 +167,25 @@ export default async function StudentHome() {
                 </ul>
                 <Link
                   href="/leaderboard"
-                  className="mt-2 block text-xs text-primary text-center hover:underline font-medium"
+                  className="mt-3 block text-xs text-muted-foreground hover:text-foreground transition-colors font-medium"
                 >
-                  ראה לוח שיאים מלא
+                  לוח שיאים מלא ←
                 </Link>
               </CardContent>
             </Card>
           )}
         </div>
 
+        {/* Quick actions */}
         <div>
-          <h2 className="text-sm font-semibold text-muted-foreground mb-3">גישה מהירה</h2>
-          <div className="grid grid-cols-2 gap-3">
-            {quickActions.map(({ href, label, icon: Icon, color }) => (
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">גישה מהירה</p>
+          <div className="grid grid-cols-2 gap-2.5">
+            {quickActions.map(({ href, label, icon: Icon }) => (
               <Link key={href} href={href}>
-                <Card className="hover:bg-muted/50 transition-colors cursor-pointer active:scale-95">
-                  <CardContent className="p-5 flex flex-col items-center gap-2.5">
-                    <Icon className={`size-8 ${color}`} />
-                    <span className="text-sm font-medium text-center">{label}</span>
+                <Card className="hover:bg-muted/40 transition-colors cursor-pointer active:scale-[0.98]">
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <Icon className="size-5 text-muted-foreground shrink-0" />
+                    <span className="text-sm font-medium leading-tight">{label}</span>
                   </CardContent>
                 </Card>
               </Link>

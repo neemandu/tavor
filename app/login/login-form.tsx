@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -21,10 +21,7 @@ export function LoginForm() {
     setError("");
     setLoading(true);
 
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
 
     if (authError || !data.user) {
       setError("אימייל או סיסמה שגויים");
@@ -38,58 +35,62 @@ export function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-muted/20">
-      {/* Branded hero section */}
-      <div className="bg-gradient-to-b from-primary to-primary/80 text-primary-foreground flex flex-col items-center justify-center pt-12 pb-14 px-4" style={{ minHeight: "38%" }}>
-        <img src="/logo.svg" alt="תבור" className="w-32 h-32 mb-1 drop-shadow-lg" />
-        <p className="text-sm mt-1 opacity-75 tracking-wide">כוחות הביטחון</p>
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Theme toggle — top left (end in RTL) */}
+      <div className="absolute top-4 end-4">
+        <ThemeToggle />
       </div>
 
-      {/* Form card floating over the hero */}
-      <div className="-mt-6 mx-4 relative z-10 max-w-sm w-full self-center">
-        <Card className="w-full shadow-lg">
-          <CardHeader className="text-center pb-2">
-            <CardTitle className="text-xl">כניסה למערכת</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="email">אימייל</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  required
-                  autoComplete="email"
-                  dir="ltr"
-                />
-              </div>
+      {/* Centered content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6">
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-10">
+          <img src="/logo.svg" alt="תבור" className="w-24 h-24 mb-4" />
+          <h1 className="text-2xl font-bold tracking-tight">תבור</h1>
+          <p className="text-sm text-muted-foreground mt-1">אולפן ערבית לכוחות הביטחון</p>
+        </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="password">סיסמה</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                  dir="ltr"
-                />
-              </div>
+        {/* Form */}
+        <div className="w-full max-w-sm space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-sm font-medium">אימייל</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                required
+                autoComplete="email"
+                dir="ltr"
+                className="h-11"
+              />
+            </div>
 
-              {error && (
-                <p className="text-sm text-destructive text-center">{error}</p>
-              )}
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-sm font-medium">סיסמה</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                dir="ltr"
+                className="h-11"
+              />
+            </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "מתחבר..." : "כניסה"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+            {error && (
+              <p className="text-sm text-destructive">{error}</p>
+            )}
+
+            <Button type="submit" className="w-full h-11 font-semibold" disabled={loading}>
+              {loading ? "מתחבר..." : "כניסה"}
+            </Button>
+          </form>
+        </div>
       </div>
     </div>
   );

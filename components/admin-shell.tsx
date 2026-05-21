@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const navItems = [
   { href: "/admin/dashboard", label: "לוח בקרה", icon: LayoutDashboard },
@@ -34,17 +34,17 @@ function NavLinks({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
 
   return (
-    <ul className="space-y-1">
+    <ul className="space-y-0.5">
       {navItems.map(({ href, label, icon: Icon }) => (
         <li key={href}>
           <Link
             href={href}
             onClick={onClose}
             className={cn(
-              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+              "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
               pathname.startsWith(href)
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-foreground text-background font-medium"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground font-normal"
             )}
           >
             <Icon className="size-4 shrink-0" />
@@ -68,78 +68,89 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen flex">
-      {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-56 shrink-0 flex-col border-s bg-muted/30 p-4">
-        <div className="mb-6 flex items-center gap-2.5">
-          <img src="/logo.svg" alt="תבור" className="w-10 h-10 rounded-full" />
+    <div className="min-h-screen flex bg-background">
+      {/* Desktop sidebar — on the right in RTL */}
+      <aside className="hidden md:flex w-56 shrink-0 flex-col border-s border-border bg-background p-5">
+        <div className="mb-8 flex items-center gap-2.5">
+          <img src="/logo.svg" alt="תבור" className="w-9 h-9 rounded-full" />
           <div>
-            <h1 className="text-base font-bold leading-tight">תבור</h1>
+            <h1 className="text-sm font-bold leading-tight">תבור</h1>
             <p className="text-xs text-muted-foreground leading-tight">ניהול אולפן</p>
           </div>
         </div>
 
         <NavLinks />
 
-        <div className="mt-auto">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start gap-2 text-muted-foreground"
+        <div className="mt-auto space-y-1 pt-4 border-t border-border">
+          <div className="flex items-center justify-between px-3 py-2">
+            <span className="text-xs text-muted-foreground">מצב תצוגה</span>
+            <ThemeToggle />
+          </div>
+          <button
             onClick={handleSignOut}
+            className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors w-full"
           >
-            <LogOut className="size-4" />
+            <LogOut className="size-4 shrink-0" />
             יציאה
-          </Button>
+          </button>
         </div>
       </aside>
 
-      {/* Mobile header */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="md:hidden flex items-center justify-between border-b px-4 h-14">
-          <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="תבור" className="w-8 h-8 rounded-full" />
-            <h1 className="font-bold text-base">תבור</h1>
-          </div>
-          <button onClick={() => setMobileOpen(true)}>
+        {/* Mobile header */}
+        <header className="md:hidden flex items-center justify-between border-b border-border px-5 h-14 bg-background">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+          >
             <Menu className="size-5" />
           </button>
+          <div className="flex items-center gap-2">
+            <img src="/logo.svg" alt="תבור" className="w-7 h-7 rounded-full" />
+            <h1 className="font-semibold text-sm">תבור</h1>
+          </div>
+          <ThemeToggle />
         </header>
 
-        {/* Mobile drawer */}
+        {/* Mobile drawer — slides from the right (start-0 = right in RTL) */}
         {mobileOpen && (
           <div className="fixed inset-0 z-50 md:hidden">
             <div
-              className="absolute inset-0 bg-black/40"
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
               onClick={() => setMobileOpen(false)}
             />
-            <aside className="absolute start-0 top-0 bottom-0 w-64 bg-background p-4 flex flex-col">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <img src="/logo.svg" alt="תבור" className="w-8 h-8 rounded-full" />
-                  <h1 className="font-bold text-base">תבור</h1>
-                </div>
-                <button onClick={() => setMobileOpen(false)}>
+            <aside className="absolute start-0 top-0 bottom-0 w-64 bg-background p-5 flex flex-col border-e border-border">
+              <div className="flex items-center justify-between mb-8">
+                <button
+                  onClick={() => setMobileOpen(false)}
+                  className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                >
                   <X className="size-5" />
                 </button>
+                <div className="flex items-center gap-2">
+                  <img src="/logo.svg" alt="תבור" className="w-7 h-7 rounded-full" />
+                  <h1 className="font-semibold text-sm">תבור</h1>
+                </div>
               </div>
               <NavLinks onClose={() => setMobileOpen(false)} />
-              <div className="mt-auto">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start gap-2 text-muted-foreground"
+              <div className="mt-auto space-y-1 pt-4 border-t border-border">
+                <div className="flex items-center justify-between px-3 py-2">
+                  <span className="text-xs text-muted-foreground">מצב תצוגה</span>
+                  <ThemeToggle />
+                </div>
+                <button
                   onClick={handleSignOut}
+                  className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors w-full"
                 >
-                  <LogOut className="size-4" />
+                  <LogOut className="size-4 shrink-0" />
                   יציאה
-                </Button>
+                </button>
               </div>
             </aside>
           </div>
         )}
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-5 md:p-8">{children}</main>
       </div>
     </div>
   );

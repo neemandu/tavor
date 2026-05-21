@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Search, MessageSquare, FileText, Grid2x2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const navItems = [
   { href: "/", label: "בית", icon: Home, exact: true },
@@ -18,9 +19,18 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <main className="flex-1 overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom))]">{children}</main>
+      {/* Top header */}
+      <header className="fixed top-0 inset-x-0 z-50 h-14 flex items-center justify-between px-5 bg-background border-b border-border">
+        <ThemeToggle />
+        <span className="text-sm font-semibold tracking-wide">תבור</span>
+      </header>
 
-      <nav className="fixed bottom-0 inset-x-0 z-50 bg-background border-t border-border h-auto pb-[env(safe-area-inset-bottom)]">
+      <main className="flex-1 overflow-y-auto pt-14 pb-[calc(4rem+env(safe-area-inset-bottom))]">
+        {children}
+      </main>
+
+      {/* Bottom nav */}
+      <nav className="fixed bottom-0 inset-x-0 z-50 bg-background border-t border-border pb-[env(safe-area-inset-bottom)]">
         <div className="grid grid-cols-5 h-16">
           {navItems.map(({ href, label, icon: Icon, exact }) => {
             const isActive = exact ? pathname === href : pathname.startsWith(href);
@@ -29,20 +39,14 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
                 key={href}
                 href={href}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 text-xs transition-colors border-t-2",
+                  "flex flex-col items-center justify-center gap-1 text-[11px] transition-colors",
                   isActive
-                    ? "text-primary border-primary"
-                    : "text-muted-foreground hover:text-foreground border-transparent"
+                    ? "text-foreground font-semibold"
+                    : "text-muted-foreground hover:text-foreground font-normal"
                 )}
               >
-                {isActive ? (
-                  <span className="rounded-full bg-primary/10 p-1.5">
-                    <Icon className="size-5" />
-                  </span>
-                ) : (
-                  <Icon className="size-5" />
-                )}
-                <span className={isActive ? "font-medium" : "font-normal"}>{label}</span>
+                <Icon className={cn("size-5", isActive ? "stroke-[2.2]" : "stroke-[1.5]")} />
+                <span>{label}</span>
               </Link>
             );
           })}

@@ -28,7 +28,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="he" dir="rtl">
+    <html lang="he" dir="rtl" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{__html:`
+          try{var s=localStorage.getItem('theme'),p=window.matchMedia('(prefers-color-scheme:dark)').matches;if(s==='dark'||(s!=='light'&&p))document.documentElement.classList.add('dark')}catch(e){}
+        `}} />
+      </head>
       <body
         className={`${hebrewFont.variable} ${arabicFont.variable} antialiased`}
       >
