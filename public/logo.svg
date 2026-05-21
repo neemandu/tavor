@@ -49,6 +49,19 @@
   <!-- Inner ring framing the text -->
   <circle cx="160" cy="160" r="108" fill="none" stroke="#c9a020" stroke-width="0.9" stroke-opacity="0.45"/>
 
+  <!-- Arabic ghost layer — same word transliterated, floats behind Hebrew -->
+  <text
+    x="160"
+    y="185"
+    text-anchor="middle"
+    font-size="86"
+    font-family="'Traditional Arabic', 'Scheherazade New', 'Times New Roman', serif"
+    fill="#c9a020"
+    fill-opacity="0.13"
+    direction="rtl"
+    unicode-bidi="embed"
+  >تبور</text>
+
   <!-- Hebrew "תבור" — main logotype -->
   <text
     x="160"
@@ -62,6 +75,21 @@
     unicode-bidi="embed"
     filter="url(#glow)"
   >תבור</text>
+
+  <!--
+    Arabic-style dot accents on Hebrew letters:
+      ת → ت  (two dots above, like Arabic Ta)
+      ב → ب  (one dot below, like Arabic Ba)
+      ו already resembles و (Arabic Waw — same Phoenician ancestor)
+      ר already resembles ر (Arabic Ra  — same Phoenician ancestor)
+  -->
+
+  <!-- Two dots above ת → ت -->
+  <circle cx="207" cy="112" r="4.5" fill="#c9a020" filter="url(#glow)"/>
+  <circle cx="222" cy="112" r="4.5" fill="#c9a020" filter="url(#glow)"/>
+
+  <!-- One dot below ב → ب -->
+  <circle cx="155" cy="194" r="4.5" fill="#c9a020" filter="url(#glow)"/>
 
   <!-- Gold divider with center jewel -->
   <line x1="115" y1="200" x2="147" y2="200" stroke="#c9a020" stroke-width="0.9" stroke-opacity="0.75"/>
