@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320">
+  <defs>
+    <radialGradient id="bgGrad" cx="48%" cy="42%" r="70%">
+      <stop offset="0%" stop-color="#1a2e4a"/>
+      <stop offset="100%" stop-color="#06101e"/>
+    </radialGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Circular clipping background -->
+  <circle cx="160" cy="160" r="160" fill="url(#bgGrad)"/>
+
+  <!-- Octagram — two overlapping squares, rotated 0° and 45° -->
+  <!-- Square 1 (axis-aligned, clipped visually to inner area) -->
+  <polygon
+    points="160,20 227.7,133 323.7,76.3 267,172.3 300,160 267,227.7 323.7,323.7 227.7,267 160,300 172.3,267 76.3,323.7 133,227.7 20,160 133,172.3 76.3,76.3 172.3,133"
+    fill="#c9a020" fill-opacity="0.07"
+    stroke="#c9a020" stroke-width="1.3" stroke-opacity="0.55"
+    stroke-linejoin="miter"
+  />
+
+  <!-- Diamond accents at each of the 8 outer star points -->
+  <!-- Top (160,20) -->
+  <polygon points="160,13 164,20 160,27 156,20" fill="#c9a020" filter="url(#glow)"/>
+  <!-- Top-right (251,51) — approx position on 45° arm -->
+  <polygon points="247,47 254,51 251,58 244,51" fill="#c9a020"/>
+  <!-- Right (300,160) -->
+  <polygon points="293,160 300,156 307,160 300,164" fill="#c9a020"/>
+  <!-- Bottom-right (251,269) -->
+  <polygon points="244,269 251,262 258,269 251,276" fill="#c9a020"/>
+  <!-- Bottom (160,300) -->
+  <polygon points="156,293 160,300 164,300 160,307 156,300" fill="#c9a020"/>
+  <!-- Bottom-left (69,269) -->
+  <polygon points="62,269 69,262 76,269 69,276" fill="#c9a020"/>
+  <!-- Left (20,160) -->
+  <polygon points="13,160 20,156 27,160 20,164" fill="#c9a020"/>
+  <!-- Top-left (69,51) -->
+  <polygon points="62,51 69,44 76,51 69,58" fill="#c9a020"/>
+
+  <!-- Outer thin ring -->
+  <circle cx="160" cy="160" r="148" fill="none" stroke="#c9a020" stroke-width="0.6" stroke-opacity="0.35" stroke-dasharray="3,5"/>
+
+  <!-- Inner ring framing the text -->
+  <circle cx="160" cy="160" r="108" fill="none" stroke="#c9a020" stroke-width="0.9" stroke-opacity="0.45"/>
+
+  <!-- Hebrew "תבור" — main logotype -->
+  <text
+    x="160"
+    y="182"
+    text-anchor="middle"
+    font-size="80"
+    font-weight="700"
+    font-family="'Times New Roman', Georgia, serif"
+    fill="#ffffff"
+    direction="rtl"
+    unicode-bidi="embed"
+    filter="url(#glow)"
+  >תבור</text>
+
+  <!-- Gold divider with center jewel -->
+  <line x1="115" y1="200" x2="147" y2="200" stroke="#c9a020" stroke-width="0.9" stroke-opacity="0.75"/>
+  <circle cx="160" cy="200" r="3.5" fill="#c9a020" opacity="0.9"/>
+  <line x1="173" y1="200" x2="205" y2="200" stroke="#c9a020" stroke-width="0.9" stroke-opacity="0.75"/>
+
+  <!-- Arabic "تابور" with fatha and damma diacritics -->
+  <text
+    x="160"
+    y="225"
+    text-anchor="middle"
+    font-size="26"
+    font-family="'Times New Roman', 'Traditional Arabic', 'Scheherazade New', serif"
+    fill="#c9a020"
+    direction="rtl"
+    unicode-bidi="embed"
+    letter-spacing="1"
+  >تَابُور</text>
+
+  <!-- Subtle bottom tagline -->
+  <text
+    x="160"
+    y="250"
+    text-anchor="middle"
+    font-size="9"
+    font-family="sans-serif"
+    fill="#c9a020"
+    fill-opacity="0.45"
+    letter-spacing="2.5"
+    direction="rtl"
+  >אולפן ערבית</text>
+</svg>

@@ -40,10 +40,9 @@ export function LoginForm() {
   return (
     <div className="min-h-screen flex flex-col bg-muted/20">
       {/* Branded hero section */}
-      <div className="bg-gradient-to-b from-primary to-primary/80 text-primary-foreground flex flex-col items-center justify-center pt-16 pb-12 px-4" style={{ minHeight: "35%" }}>
-        <div className="text-4xl mb-3">★</div>
-        <h1 className="text-4xl font-bold tracking-wide">תבור</h1>
-        <p className="text-sm mt-2 opacity-80">אולפן ערבית - כוחות הביטחון</p>
+      <div className="bg-gradient-to-b from-primary to-primary/80 text-primary-foreground flex flex-col items-center justify-center pt-12 pb-14 px-4" style={{ minHeight: "38%" }}>
+        <img src="/logo.svg" alt="תבור" className="w-32 h-32 mb-1 drop-shadow-lg" />
+        <p className="text-sm mt-1 opacity-75 tracking-wide">כוחות הביטחון</p>
       </div>
 
       {/* Form card floating over the hero */}

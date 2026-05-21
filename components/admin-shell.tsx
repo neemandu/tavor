@@ -71,9 +71,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-56 shrink-0 flex-col border-s bg-muted/30 p-4">
-        <div className="mb-6">
-          <h1 className="text-lg font-bold">תבור</h1>
-          <p className="text-xs text-muted-foreground">ניהול אולפן</p>
+        <div className="mb-6 flex items-center gap-2.5">
+          <img src="/logo.svg" alt="תבור" className="w-10 h-10 rounded-full" />
+          <div>
+            <h1 className="text-base font-bold leading-tight">תבור</h1>
+            <p className="text-xs text-muted-foreground leading-tight">ניהול אולפן</p>
+          </div>
         </div>
 
         <NavLinks />
@@ -94,7 +97,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       {/* Mobile header */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden flex items-center justify-between border-b px-4 h-14">
-          <h1 className="font-bold text-lg">תבור</h1>
+          <div className="flex items-center gap-2">
+            <img src="/logo.svg" alt="תבור" className="w-8 h-8 rounded-full" />
+            <h1 className="font-bold text-base">תבור</h1>
+          </div>
           <button onClick={() => setMobileOpen(true)}>
             <Menu className="size-5" />
           </button>
@@ -109,7 +115,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             />
             <aside className="absolute start-0 top-0 bottom-0 w-64 bg-background p-4 flex flex-col">
               <div className="flex items-center justify-between mb-6">
-                <h1 className="font-bold text-lg">תבור</h1>
+                <div className="flex items-center gap-2">
+                  <img src="/logo.svg" alt="תבור" className="w-8 h-8 rounded-full" />
+                  <h1 className="font-bold text-base">תבור</h1>
+                </div>
                 <button onClick={() => setMobileOpen(false)}>
                   <X className="size-5" />
                 </button>
