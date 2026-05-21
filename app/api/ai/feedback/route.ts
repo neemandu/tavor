@@ -1,5 +1,6 @@
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { generateFeedback } from "@/lib/claude";
+import { awardPoints } from "@/lib/award-points";
 import { NextRequest, NextResponse } from "next/server";
 import type { ChatMessage } from "@/types";
 
@@ -53,13 +54,8 @@ export async function POST(request: NextRequest) {
         .eq("id", sessionId);
     }
 
-    // Award 10 points for completing a scenario
-    await adminSupabase.from("user_points").insert({
-      user_id: user.id,
-      points: 10,
-      reason: "scenario_complete",
-      metadata: { scenarioId },
-    });
+    // Award 10 points for completing a scenario + update streak
+    await awardPoints(user.id, 10, "scenario_complete", { scenario_id: scenarioId });
 
     return NextResponse.json({ feedback: text });
   } catch (err) {

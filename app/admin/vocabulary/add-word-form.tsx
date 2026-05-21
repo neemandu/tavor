@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -38,18 +37,21 @@ export function AddWordForm() {
     if (!arabic || !hebrew) return;
     setLoading(true);
     try {
-      const supabase = createClient();
       const filteredInflections = Object.fromEntries(
         Object.entries(inflections).filter(([, v]) => v.trim() !== "")
       );
-      const { error } = await supabase.from("vocabulary").insert({
-        arabic_text: arabic,
-        transliteration: transliteration || null,
-        hebrew_translation: hebrew,
-        category: category || null,
-        inflections: Object.keys(filteredInflections).length > 0 ? filteredInflections : null,
+      const res = await fetch("/api/admin/vocabulary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          arabic_text: arabic,
+          transliteration: transliteration || null,
+          hebrew_translation: hebrew,
+          category: category || null,
+          inflections: Object.keys(filteredInflections).length > 0 ? filteredInflections : null,
+        }),
       });
-      if (error) throw error;
+      if (!res.ok) throw new Error(await res.text());
       toast.success("מילה נוספה בהצלחה");
       setArabic("");
       setTransliteration("");

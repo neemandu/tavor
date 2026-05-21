@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,20 +42,22 @@ export function ScenarioForm({ userId }: { userId: string }) {
     if (!name.trim()) return;
     setLoading(true);
     try {
-      const supabase = createClient();
       const filteredHints = hints.filter((h) => h.trim());
-      const { error } = await supabase.from("scenarios").insert({
-        name,
-        student_description: description || null,
-        student_role: role || null,
-        ai_instructions: aiInstructions || null,
-        voice_instructions: voiceInstructions || null,
-        hints: filteredHints.length > 0 ? filteredHints : null,
-        difficulty: difficulty || null,
-        category: category || null,
-        created_by: userId,
+      const res = await fetch("/api/admin/scenarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          student_description: description || null,
+          student_role: role || null,
+          ai_instructions: aiInstructions || null,
+          voice_instructions: voiceInstructions || null,
+          hints: filteredHints.length > 0 ? filteredHints : null,
+          difficulty: difficulty || null,
+          category: category || null,
+        }),
       });
-      if (error) throw error;
+      if (!res.ok) throw new Error(await res.text());
       toast.success("תרחיש נוצר בהצלחה");
       setName(""); setDescription(""); setRole(""); setAiInstructions("");
       setVoiceInstructions(""); setDifficulty(""); setCategory(""); setHints([""]);

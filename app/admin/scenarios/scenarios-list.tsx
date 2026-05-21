@@ -11,9 +11,11 @@ import {
   type ScenarioDifficulty,
   type ScenarioCategory,
 } from "@/types";
-import { Pencil, CheckCircle2, XCircle } from "lucide-react";
+import { Pencil, CheckCircle2, XCircle, Trash2 } from "lucide-react";
 import { ScenarioToggle } from "./scenario-toggle";
 import { ScenarioEditForm } from "./scenario-edit-form";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface Props {
   scenarios: Scenario[];
@@ -21,6 +23,23 @@ interface Props {
 
 export function ScenariosList({ scenarios }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const router = useRouter();
+
+  async function handleDelete(id: string, name: string) {
+    if (!window.confirm(`למחוק את התרחיש "${name}"?`)) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/admin/scenarios/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      toast.success("תרחיש נמחק");
+      router.refresh();
+    } catch {
+      toast.error("שגיאה במחיקת התרחיש");
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   if (scenarios.length === 0) {
     return <p className="text-sm text-muted-foreground">עדיין לא נוצרו תרחישים</p>;
@@ -86,6 +105,17 @@ export function ScenariosList({ scenarios }: Props) {
                   scenarioId={scenario.id}
                   isActive={scenario.is_active}
                 />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 text-muted-foreground hover:text-destructive"
+                  onClick={() => handleDelete(scenario.id, scenario.name)}
+                  disabled={deletingId === scenario.id}
+                  aria-label="מחק תרחיש"
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
               </div>
             </CardContent>
           </Card>

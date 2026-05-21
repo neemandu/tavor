@@ -1,5 +1,6 @@
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { sendExamSubmissionEmail } from "@/lib/email";
+import { awardPoints } from "@/lib/award-points";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -69,6 +70,9 @@ export async function POST(request: NextRequest) {
   } catch (emailErr) {
     console.error("Failed to send submission email:", emailErr);
   }
+
+  // Award 10 points for submitting an exam + update streak (fire-and-forget)
+  awardPoints(user.id, 10, "exam_score", { exam_id: examId, type: "submission" }).catch(() => {});
 
   return NextResponse.json({ ok: true, emailSent });
 }
