@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Alef, Noto_Naskh_Arabic } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { TavorLoader } from "@/components/tavor-loader";
 import "./globals.css";
 
 const hebrewFont = Alef({
@@ -37,6 +38,7 @@ export default function RootLayout({
       <body
         className={`${hebrewFont.variable} ${arabicFont.variable} antialiased`}
       >
+        <TavorLoader />
         {children}
         <Toaster position="top-center" />
       </body>
