@@ -10,17 +10,6 @@ import type { ChatMessage } from "@/types";
 import { useTTS } from "@/hooks/use-tts";
 import { VoiceOrb, type OrbState } from "@/components/voice-orb";
 
-interface ISpeechRecognition extends EventTarget {
-  lang: string; continuous: boolean; interimResults: boolean;
-  start(): void; stop(): void;
-  onresult: ((e: ISpeechRecognitionEvent) => void) | null;
-  onerror: ((e: Event) => void) | null;
-  onend: (() => void) | null;
-}
-interface ISpeechRecognitionEvent { results: ISpeechRecognitionResultList; }
-interface ISpeechRecognitionResultList { readonly length: number; [i: number]: ISpeechRecognitionResult; }
-interface ISpeechRecognitionResult { readonly isFinal: boolean; readonly length: number; [i: number]: { readonly transcript: string }; }
-declare global { interface Window { SpeechRecognition: new () => ISpeechRecognition; webkitSpeechRecognition: new () => ISpeechRecognition; } }
 
 function drainSentences(buf: string, final: boolean): [string[], string] {
   const sentences: string[] = [];

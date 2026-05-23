@@ -15,18 +15,6 @@ import { DIFFICULTY_LABELS } from "@/types";
 import Link from "next/link";
 import { VoiceOrb, type OrbState } from "@/components/voice-orb";
 
-interface ISpeechRecognition extends EventTarget {
-  lang: string; continuous: boolean; interimResults: boolean;
-  start(): void; stop(): void;
-  onresult: ((event: ISpeechRecognitionEvent) => void) | null;
-  onerror: ((event: Event) => void) | null;
-  onend: (() => void) | null;
-}
-interface ISpeechRecognitionEvent { results: ISpeechRecognitionResultList; }
-interface ISpeechRecognitionResultList { readonly length: number; [index: number]: ISpeechRecognitionResult; }
-interface ISpeechRecognitionResult { readonly isFinal: boolean; readonly length: number; [index: number]: ISpeechRecognitionAlternative; }
-interface ISpeechRecognitionAlternative { readonly transcript: string; readonly confidence: number; }
-declare global { interface Window { SpeechRecognition: new () => ISpeechRecognition; webkitSpeechRecognition: new () => ISpeechRecognition; } }
 
 function drainSentences(buf: string, final: boolean): [string[], string] {
   const sentences: string[] = [];

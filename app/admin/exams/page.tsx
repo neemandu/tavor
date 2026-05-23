@@ -36,7 +36,7 @@ export default async function AdminExamsPage({
   const exams = examsData ?? [];
 
   // Fetch students, optionally filtered by course enrollment
-  let studentsQuery = supabase
+  const studentsQuery = supabase
     .from("users")
     .select("id, name")
     .eq("role", "student")
