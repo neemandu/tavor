@@ -181,7 +181,7 @@ export function ConversationInterface({ userId: _userId }: Props) {
   // Auto-loop: re-activate mic after AI finishes speaking
   useEffect(() => {
     if (!conversationStarted || isRecording || loading || isPlaying || timeLeft === 0) return;
-    const t = setTimeout(() => startRecordingRef.current(), 400);
+    const t = setTimeout(() => startRecordingRef.current(), 150);
     return () => clearTimeout(t);
   }, [isPlaying, loading, isRecording, conversationStarted, timeLeft]);
 

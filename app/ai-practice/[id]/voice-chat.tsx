@@ -150,7 +150,7 @@ export function VoiceChat({ scenario, userId }: Props) {
   // Auto-loop: re-activate mic after AI finishes speaking
   useEffect(() => {
     if (!conversationStarted || isRecording || loadingAI || isPlaying || !autoPlay) return;
-    const t = setTimeout(() => startRecordingRef.current(), 400);
+    const t = setTimeout(() => startRecordingRef.current(), 150);
     return () => clearTimeout(t);
   }, [isPlaying, loadingAI, isRecording, conversationStarted, autoPlay]);
 
