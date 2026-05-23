@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Alef, Noto_Sans_Arabic } from "next/font/google";
+import { Alef, Noto_Naskh_Arabic } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -10,10 +10,10 @@ const hebrewFont = Alef({
   display: "swap",
 });
 
-const arabicFont = Noto_Sans_Arabic({
+const arabicFont = Noto_Naskh_Arabic({
   variable: "--font-noto-arabic",
   subsets: ["arabic"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500", "700"],
   display: "swap",
 });
 
