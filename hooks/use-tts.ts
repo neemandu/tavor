@@ -94,6 +94,7 @@ export function useTTS() {
     queueRef.current.push(fetchAudio(text, false));
     if (!processingRef.current) {
       processingRef.current = true;
+      setIsPlaying(true); // mark busy immediately so auto-loop doesn't fire before audio loads
       drainQueue(generationRef.current);
     }
   }, [fetchAudio, drainQueue]);
@@ -104,6 +105,7 @@ export function useTTS() {
     if (!stripEmojis(text)) return;
     queueRef.current.push(fetchAudio(text, true));
     processingRef.current = true;
+    setIsPlaying(true);
     drainQueue(generationRef.current);
   }, [stop, fetchAudio, drainQueue]);
 
