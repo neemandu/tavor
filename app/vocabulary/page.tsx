@@ -11,15 +11,6 @@ interface PageProps {
   searchParams: Promise<{ q?: string; cat?: string }>;
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-  all: "bg-primary text-primary-foreground",
-  security: "bg-primary text-primary-foreground",
-  daily: "bg-teal-500 text-white",
-  checkpoint: "bg-indigo-500 text-white",
-  interrogation: "bg-amber-500 text-white",
-  other: "bg-muted text-muted-foreground",
-};
-
 export default async function VocabularyPage({ searchParams }: PageProps) {
   const { q, cat } = await searchParams;
   const supabase = await createClient();
