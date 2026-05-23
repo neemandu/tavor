@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -21,7 +20,10 @@ export function LoginForm() {
     setError("");
     setLoading(true);
 
-    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
     if (authError || !data.user) {
       setError("אימייל או סיסמה שגויים");
@@ -36,25 +38,20 @@ export function LoginForm() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Theme toggle — top left (end in RTL) */}
-      <div className="absolute top-4 end-4">
-        <ThemeToggle />
+      {/* Orange gradient header — top 40% */}
+      <div className="h-[40vh] bg-gradient-to-b from-primary to-[oklch(60%_0.22_40)] flex flex-col items-center justify-center gap-2 px-6">
+        <h1 className="text-4xl font-black text-white tracking-tight">תבור</h1>
+        <p className="text-lg text-white/80">בית הספר לערבית</p>
       </div>
 
-      {/* Centered content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6">
-        {/* Logo */}
-        <div className="flex flex-col items-center mb-10">
-          <img src="/logo.svg" alt="תבור" className="w-24 h-24 mb-4" />
-          <h1 className="text-2xl font-bold tracking-tight">תבור</h1>
-          <p className="text-sm text-muted-foreground mt-1">אולפן ערבית לכוחות הביטחון</p>
-        </div>
-
-        {/* Form */}
-        <div className="w-full max-w-sm space-y-5">
+      {/* Floating form card */}
+      <div className="flex-1 flex flex-col items-center px-6 -mt-8">
+        <div className="w-full max-w-sm bg-card rounded-2xl shadow-[0_8px_32px_oklch(0%_0_0/0.12)] p-6 space-y-5">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-sm font-medium">אימייל</Label>
+              <Label htmlFor="email" className="text-sm font-medium">
+                אימייל
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -64,12 +61,14 @@ export function LoginForm() {
                 required
                 autoComplete="email"
                 dir="ltr"
-                className="h-11"
+                className="h-12 rounded-xl border-2 focus:border-primary focus-visible:ring-0"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-sm font-medium">סיסמה</Label>
+              <Label htmlFor="password" className="text-sm font-medium">
+                סיסמה
+              </Label>
               <Input
                 id="password"
                 type="password"
@@ -78,15 +77,17 @@ export function LoginForm() {
                 required
                 autoComplete="current-password"
                 dir="ltr"
-                className="h-11"
+                className="h-12 rounded-xl border-2 focus:border-primary focus-visible:ring-0"
               />
             </div>
 
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
+            {error && <p className="text-sm text-destructive">{error}</p>}
 
-            <Button type="submit" className="w-full h-11 font-semibold" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full h-12 rounded-xl font-bold text-base"
+              disabled={loading}
+            >
               {loading ? "מתחבר..." : "כניסה"}
             </Button>
           </form>
