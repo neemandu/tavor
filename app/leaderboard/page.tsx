@@ -101,9 +101,9 @@ export default async function LeaderboardPage({
       <div className="p-4 max-w-lg mx-auto space-y-5">
         {/* Header */}
         <div className="pt-4 flex items-center gap-2">
-          <Trophy className="size-7 text-yellow-500" />
+          <Trophy className="size-7 text-amber-500" />
           <div>
-            <h1 className="text-2xl font-bold">לוח שיאים</h1>
+            <h1 className="text-3xl font-black">לוח המצטיינים</h1>
             {myEntry && (
               <p className="text-sm text-muted-foreground">
                 הדירוג שלך: #{myEntry.rank} · {myEntry.total_points} נקודות
@@ -113,16 +113,16 @@ export default async function LeaderboardPage({
         </div>
 
         {/* Period tabs */}
-        <div className="flex gap-2 bg-muted rounded-lg p-1">
+        <div className="flex gap-2 flex-wrap">
           {PERIODS.map(({ key, label }) => (
             <Link
               key={key}
               href={`/leaderboard?period=${key}`}
               className={cn(
-                "flex-1 text-center text-sm py-1.5 rounded-md font-medium transition-colors",
+                "px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
                 period === key
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/70"
               )}
             >
               {label}
@@ -142,35 +142,48 @@ export default async function LeaderboardPage({
           <>
             {/* Podium */}
             {top3.length > 0 && (
-              <div className="flex items-end justify-center gap-3 pt-2 pb-4">
-                {podiumOrder.map((entry, podiumIdx) => {
+              <div className="flex items-end justify-center gap-4 pt-2 pb-6">
+                {podiumOrder.map((entry) => {
                   const isFirst = entry.rank === 1;
                   const rankIndex = entry.rank - 1;
                   const heights = ["h-24", "h-32", "h-20"];
                   const barHeight = heights[rankIndex] ?? "h-20";
+                  const podiumColors = [
+                    "bg-yellow-400/80",
+                    "bg-slate-300/80",
+                    "bg-amber-400/60",
+                  ];
+                  const barColor = podiumColors[rankIndex] ?? "bg-muted";
 
                   return (
-                    <div
-                      key={entry.user_id}
-                      className="flex flex-col items-center gap-1"
-                    >
-                      <span className="text-2xl">{PODIUM_MEDALS[rankIndex]}</span>
+                    <div key={entry.user_id} className="flex flex-col items-center gap-1.5">
+                      <div
+                        className={cn(
+                          "w-12 h-12 rounded-full flex items-center justify-center text-lg font-black border-2",
+                          isFirst
+                            ? "bg-yellow-100 border-yellow-400 text-yellow-700"
+                            : "bg-muted border-border text-foreground"
+                        )}
+                      >
+                        {entry.name.charAt(0)}
+                      </div>
                       <p className="text-xs font-semibold text-center max-w-[72px] truncate">
                         {entry.name}
                       </p>
-                      <p className="text-xs text-muted-foreground">{entry.total_points} נק׳</p>
+                      <p className="text-xs text-muted-foreground">
+                        {entry.total_points.toLocaleString("he-IL")}
+                      </p>
                       <div
                         className={cn(
-                          "w-20 rounded-t-lg flex items-end justify-center pb-1",
+                          "w-20 rounded-t-xl flex items-end justify-center pb-1.5",
                           barHeight,
-                          isFirst
-                            ? "bg-yellow-400/80"
-                            : entry.rank === 2
-                            ? "bg-slate-300/80"
-                            : "bg-orange-300/80"
+                          barColor,
+                          isFirst && "shadow-[0_0_20px_oklch(80%_0.18_85/0.4)]"
                         )}
                       >
-                        <span className="text-lg font-bold text-white/80">#{entry.rank}</span>
+                        <span className="text-base font-black text-white/80">
+                          #{entry.rank}
+                        </span>
                       </div>
                     </div>
                   );
@@ -197,7 +210,7 @@ export default async function LeaderboardPage({
                           key={row.user_id}
                           className={cn(
                             "border-b last:border-0",
-                            isMe && "bg-primary/5 font-semibold"
+                            isMe && "bg-primary/10 font-semibold"
                           )}
                         >
                           <td className="p-3">
@@ -208,13 +221,20 @@ export default async function LeaderboardPage({
                             )}
                           </td>
                           <td className="p-3">
-                            {row.name}
+                            <span className={isMe ? "text-primary" : ""}>
+                              {row.name}
+                            </span>
                             {isMe && (
                               <span className="mr-2 text-xs text-primary font-normal">(אתה)</span>
                             )}
                           </td>
                           <td className="p-3 text-end">
-                            <span className={cn(isMe ? "text-primary" : "text-muted-foreground")}>
+                            <span
+                              className={cn(
+                                "text-sm font-mono",
+                                isMe ? "text-primary font-bold" : "text-muted-foreground"
+                              )}
+                            >
                               {row.total_points.toLocaleString("he-IL")}
                             </span>
                           </td>
