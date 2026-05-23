@@ -175,16 +175,6 @@ export function ConversationInterface({ userId: _userId }: Props) {
     setIsRecording(true);
   }, [stopTTS, sendMessage, timeLeft]);
 
-  const startRecordingRef = useRef(startRecording);
-  useEffect(() => { startRecordingRef.current = startRecording; });
-
-  // Auto-loop: re-activate mic after AI finishes speaking
-  useEffect(() => {
-    if (!conversationStarted || isRecording || loading || isPlaying || timeLeft === 0) return;
-    const t = setTimeout(() => startRecordingRef.current(), 150);
-    return () => clearTimeout(t);
-  }, [isPlaying, loading, isRecording, conversationStarted, timeLeft]);
-
   function stopRecording() { recognitionRef.current?.stop(); setIsRecording(false); }
 
   function handleMicPress() {
@@ -282,7 +272,7 @@ export function ConversationInterface({ userId: _userId }: Props) {
       ? "ה-AI מדבר..."
       : loading
       ? "מעבד..."
-      : "מתכונן להאזין...";
+      : "לחץ לדבר";
 
   return (
     <div className="fixed inset-0 bg-[#0A0A0A] flex flex-col overflow-hidden">

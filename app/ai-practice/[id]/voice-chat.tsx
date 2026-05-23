@@ -144,16 +144,6 @@ export function VoiceChat({ scenario, userId }: Props) {
     setIsRecording(true);
   }, [stopTTS, sendMessage]);
 
-  const startRecordingRef = useRef(startRecording);
-  useEffect(() => { startRecordingRef.current = startRecording; });
-
-  // Auto-loop: re-activate mic after AI finishes speaking
-  useEffect(() => {
-    if (!conversationStarted || isRecording || loadingAI || isPlaying || !autoPlay) return;
-    const t = setTimeout(() => startRecordingRef.current(), 150);
-    return () => clearTimeout(t);
-  }, [isPlaying, loadingAI, isRecording, conversationStarted, autoPlay]);
-
   function stopRecording() { recognitionRef.current?.stop(); setIsRecording(false); }
 
   function handleMicPress() {
@@ -315,7 +305,7 @@ export function VoiceChat({ scenario, userId }: Props) {
     ? "ה-AI מדבר..."
     : loadingAI
     ? "מעבד..."
-    : "מתכונן להאזין...";
+    : "לחץ לדבר";
 
   return (
     <div className="fixed inset-0 bg-[#0A0A0A] flex flex-col overflow-hidden">

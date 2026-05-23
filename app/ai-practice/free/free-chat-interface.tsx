@@ -133,17 +133,6 @@ export function FreeChatInterface({ userId: _userId }: Props) {
     setIsRecording(true);
   }, [stopTTS, sendMessage]);
 
-  // Keep a stable ref so the auto-loop effect doesn't re-run when messages change
-  const startRecordingRef = useRef(startRecording);
-  useEffect(() => { startRecordingRef.current = startRecording; });
-
-  // Auto-loop: re-activate mic after AI finishes speaking
-  useEffect(() => {
-    if (!conversationStarted || isRecording || loading || isPlaying) return;
-    const t = setTimeout(() => startRecordingRef.current(), 150);
-    return () => clearTimeout(t);
-  }, [isPlaying, loading, isRecording, conversationStarted]);
-
   function stopRecording() {
     recognitionRef.current?.stop();
     setIsRecording(false);
@@ -279,7 +268,7 @@ export function FreeChatInterface({ userId: _userId }: Props) {
     ? "ה-AI מדבר..."
     : loading
     ? "מעבד..."
-    : "מתכונן להאזין...";
+    : "לחץ לדבר";
 
   return (
     <div className="fixed inset-0 bg-[#0A0A0A] flex flex-col overflow-hidden">
