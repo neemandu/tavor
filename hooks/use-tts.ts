@@ -5,52 +5,41 @@ import { toast } from "sonner";
 
 export function useTTS() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioResolveRef = useRef<(() => void) | null>(null);
+  // Queue of pre-fetched audio URL promises — starts fetching immediately on enqueue
+  const queueRef = useRef<Promise<string | null>[]>([]);
+  const processingRef = useRef(false);
+  const controllerRef = useRef(new AbortController());
+  const generationRef = useRef(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  const play = useCallback(async (text: string, lang = "ar") => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-    if (!text.trim()) return;
-    setIsPlaying(true);
-
-    try {
-      const res = await fetch("/api/ai/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, lang }),
-      });
-
-      if (!res.ok) {
-        const { detail } = await res.json().catch(() => ({ detail: "" }));
-        console.error("TTS failed:", res.status, detail);
-        toast.error("שגיאת TTS — בדוק את מפתח ElevenLabs");
-        setIsPlaying(false);
-        return;
-      }
-
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      audio.onended = () => {
-        setIsPlaying(false);
-        URL.revokeObjectURL(url);
-        audioRef.current = null;
-      };
-      audio.onerror = () => {
-        setIsPlaying(false);
-        URL.revokeObjectURL(url);
-        audioRef.current = null;
-      };
-      await audio.play();
-    } catch {
-      setIsPlaying(false);
-    }
+  const fetchAudio = useCallback((text: string, showError = false): Promise<string | null> => {
+    const { signal } = controllerRef.current;
+    return fetch("/api/ai/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+      signal,
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          if (showError) toast.error("שגיאת TTS — בדוק את מפתח ElevenLabs");
+          return null;
+        }
+        const blob = await res.blob();
+        return URL.createObjectURL(blob);
+      })
+      .catch(() => null);
   }, []);
 
   const stop = useCallback(() => {
+    generationRef.current++;
+    controllerRef.current.abort();
+    controllerRef.current = new AbortController();
+    queueRef.current = [];
+    processingRef.current = false;
+    audioResolveRef.current?.();
+    audioResolveRef.current = null;
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
@@ -58,5 +47,61 @@ export function useTTS() {
     setIsPlaying(false);
   }, []);
 
-  return { play, stop, isPlaying };
+  const drainQueue = useCallback(async (gen: number) => {
+    while (queueRef.current.length > 0) {
+      if (generationRef.current !== gen) return;
+
+      const urlPromise = queueRef.current.shift()!;
+      const url = await urlPromise;
+
+      if (generationRef.current !== gen) {
+        if (url) URL.revokeObjectURL(url);
+        return;
+      }
+
+      if (!url) continue;
+
+      setIsPlaying(true);
+      await new Promise<void>((resolve) => {
+        audioResolveRef.current = resolve;
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        const cleanup = () => {
+          URL.revokeObjectURL(url);
+          audioRef.current = null;
+          audioResolveRef.current = null;
+          resolve();
+        };
+        audio.onended = cleanup;
+        audio.onerror = cleanup;
+        audio.play().catch(cleanup);
+      });
+    }
+
+    if (generationRef.current === gen) {
+      processingRef.current = false;
+      setIsPlaying(false);
+    }
+  }, []);
+
+  // Enqueue a sentence — starts pre-fetching immediately in parallel
+  const enqueue = useCallback((text: string) => {
+    if (!text.trim()) return;
+    queueRef.current.push(fetchAudio(text, false));
+    if (!processingRef.current) {
+      processingRef.current = true;
+      drainQueue(generationRef.current);
+    }
+  }, [fetchAudio, drainQueue]);
+
+  // One-shot play (feedback, message replay) — clears queue first
+  const play = useCallback((text: string, _lang = "ar") => {
+    stop();
+    if (!text.trim()) return;
+    queueRef.current.push(fetchAudio(text, true));
+    processingRef.current = true;
+    drainQueue(generationRef.current);
+  }, [stop, fetchAudio, drainQueue]);
+
+  return { play, enqueue, stop, isPlaying };
 }

@@ -11,14 +11,17 @@ async function resolveVoiceId(apiKey: string): Promise<string | null> {
     const res = await fetch("https://api.elevenlabs.io/v1/voices", {
       headers: { "xi-api-key": apiKey },
     });
+    const body = await res.text();
+    console.log("ElevenLabs voices response:", res.status, body.slice(0, 300));
     if (!res.ok) return null;
-    const data = await res.json() as { voices: Array<{ voice_id: string; name: string }> };
+    const data = JSON.parse(body) as { voices: Array<{ voice_id: string; name: string }> };
     const voice = data.voices?.[0];
     if (!voice) return null;
     cachedVoiceId = voice.voice_id;
     console.log(`ElevenLabs: using voice "${voice.name}" (${voice.voice_id})`);
     return cachedVoiceId;
-  } catch {
+  } catch (e) {
+    console.error("ElevenLabs voices fetch error:", e);
     return null;
   }
 }
@@ -33,7 +36,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "TTS לא מוגדר – הוסף ELEVENLABS_API_KEY" }, { status: 503 });
   }
 
-  const { text } = await request.json() as { text: string; lang?: string };
+  let text: string;
+  try {
+    const body = await request.json() as { text: string; lang?: string };
+    text = body.text;
+  } catch {
+    return NextResponse.json({ error: "טקסט חסר" }, { status: 400 });
+  }
   if (!text?.trim()) return NextResponse.json({ error: "טקסט חסר" }, { status: 400 });
 
   // Strip emojis that TTS narrates in English
@@ -41,7 +50,7 @@ export async function POST(request: NextRequest) {
   if (!cleanText) return NextResponse.json({ error: "טקסט ריק" }, { status: 400 });
 
   // Use env-configured voice ID or auto-detect first available voice
-  const voiceId = process.env.ELEVENLABS_VOICE_AR ?? await resolveVoiceId(apiKey);
+  const voiceId = process.env.ELEVENLABS_VOICE_AR || await resolveVoiceId(apiKey);
   if (!voiceId) {
     return NextResponse.json({ error: "לא נמצאו קולות ב-ElevenLabs" }, { status: 503 });
   }
@@ -56,7 +65,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         text: cleanText,
-        model_id: "eleven_multilingual_v2",
+        model_id: "eleven_flash_v2_5",
         voice_settings: { stability: 0.5, similarity_boost: 0.75 },
       }),
     }

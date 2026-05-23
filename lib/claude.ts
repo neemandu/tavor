@@ -79,6 +79,7 @@ export async function generateFeedback(
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 2048,
+    system: "אתה מורה לערבית. כתוב את כל התשובות שלך בעברית בלבד, ללא יוצא מן הכלל.",
     messages: [{ role: "user", content: prompt }],
   });
 
