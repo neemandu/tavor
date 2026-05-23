@@ -4,63 +4,49 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useTTS } from "@/hooks/use-tts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import {
-  Mic, MicOff, Volume2, VolumeX, StopCircle, Loader2,
-  ChevronDown, ChevronUp, ArrowRight, RotateCcw,
+  Mic, Volume2,
+  ChevronDown, ChevronUp, ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatMessage, Scenario, ScenarioDifficulty } from "@/types";
 import { DIFFICULTY_LABELS } from "@/types";
 import Link from "next/link";
+import { VoiceOrb, type OrbState } from "@/components/voice-orb";
 
 interface ISpeechRecognition extends EventTarget {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  start(): void;
-  stop(): void;
+  lang: string; continuous: boolean; interimResults: boolean;
+  start(): void; stop(): void;
   onresult: ((event: ISpeechRecognitionEvent) => void) | null;
   onerror: ((event: Event) => void) | null;
   onend: (() => void) | null;
 }
+interface ISpeechRecognitionEvent { results: ISpeechRecognitionResultList; }
+interface ISpeechRecognitionResultList { readonly length: number; [index: number]: ISpeechRecognitionResult; }
+interface ISpeechRecognitionResult { readonly isFinal: boolean; readonly length: number; [index: number]: ISpeechRecognitionAlternative; }
+interface ISpeechRecognitionAlternative { readonly transcript: string; readonly confidence: number; }
+declare global { interface Window { SpeechRecognition: new () => ISpeechRecognition; webkitSpeechRecognition: new () => ISpeechRecognition; } }
 
-interface ISpeechRecognitionEvent {
-  results: ISpeechRecognitionResultList;
-}
-
-interface ISpeechRecognitionResultList {
-  readonly length: number;
-  [index: number]: ISpeechRecognitionResult;
-}
-
-interface ISpeechRecognitionResult {
-  readonly isFinal: boolean;
-  readonly length: number;
-  [index: number]: ISpeechRecognitionAlternative;
-}
-
-interface ISpeechRecognitionAlternative {
-  readonly transcript: string;
-  readonly confidence: number;
-}
-
-declare global {
-  interface Window {
-    SpeechRecognition: new () => ISpeechRecognition;
-    webkitSpeechRecognition: new () => ISpeechRecognition;
+function drainSentences(buf: string, final: boolean): [string[], string] {
+  const sentences: string[] = [];
+  let remaining = buf;
+  let m = /[.!?؟]/.exec(remaining);
+  while (m !== null) {
+    const s = remaining.slice(0, m.index + 1).trim();
+    remaining = remaining.slice(m.index + 1).replace(/^\s+/, "");
+    if (s.length > 1) sentences.push(s);
+    m = /[.!?؟]/.exec(remaining);
   }
+  if (final && remaining.trim().length > 1) {
+    sentences.push(remaining.trim());
+    remaining = "";
+  }
+  return [sentences, remaining];
 }
 
-interface Props {
-  scenario: Scenario;
-  userId: string;
-}
-
+interface Props { scenario: Scenario; userId: string; }
 type Phase = "briefing" | "chat" | "feedback";
-
 
 export function VoiceChat({ scenario, userId }: Props) {
   const [phase, setPhase] = useState<Phase>("briefing");
@@ -73,18 +59,13 @@ export function VoiceChat({ scenario, userId }: Props) {
   const [loadingFeedback, setLoadingFeedback] = useState(false);
   const [autoPlay, setAutoPlay] = useState(true);
   const [hintsOpen, setHintsOpen] = useState(false);
-  const [speechSupported, setSpeechSupported] = useState(true);
+  const [conversationStarted, setConversationStarted] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
-  const { play: playTTS, stop: stopTTS, isPlaying } = useTTS();
+  const { play: playTTS, enqueue, stop: stopTTS, isPlaying } = useTTS();
 
   const hints = (scenario.hints as string[] | null) ?? [];
-
-  useEffect(() => {
-    const SR = window.SpeechRecognition ?? window.webkitSpeechRecognition;
-    if (!SR) setSpeechSupported(false);
-  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -93,33 +74,58 @@ export function VoiceChat({ scenario, userId }: Props) {
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || loadingAI) return;
     setTranscript("");
-
     const userMsg: ChatMessage = { role: "user", content: text };
     const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
+    setMessages([...newMessages, { role: "assistant", content: "" }]);
     setLoadingAI(true);
+
+    let fullText = "";
+    let sentenceBuf = "";
 
     try {
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: newMessages,
-          scenarioId: scenario.id,
-          userId,
-          sessionId,
-        }),
+        body: JSON.stringify({ messages: newMessages, scenarioId: scenario.id, userId, sessionId }),
       });
+      if (!res.ok || !res.body) throw new Error("שגיאה בשיחה עם AI");
 
-      if (!res.ok) throw new Error("שגיאה בשיחה עם AI");
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let sseBuffer = "";
 
-      const data = await res.json();
-      setSessionId(data.sessionId);
-      const aiMsg: ChatMessage = { role: "assistant", content: data.text };
-      setMessages([...newMessages, aiMsg]);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        sseBuffer += decoder.decode(value, { stream: true });
+        const events = sseBuffer.split("\n\n");
+        sseBuffer = events.pop() ?? "";
 
-      if (autoPlay && data.text) {
-        await playTTS(data.text, "ar");
+        for (const event of events) {
+          const dataLine = event.split("\n").find((l) => l.startsWith("data: "));
+          if (!dataLine) continue;
+          let parsed: Record<string, unknown>;
+          try { parsed = JSON.parse(dataLine.slice(6)); } catch { continue; }
+          if (parsed.error) throw new Error(parsed.error as string);
+          if (parsed.text) {
+            fullText += parsed.text as string;
+            sentenceBuf += parsed.text as string;
+            setMessages((prev) => { const c = [...prev]; c[c.length - 1] = { role: "assistant", content: fullText }; return c; });
+            if (autoPlay) {
+              const [sentences, remaining] = drainSentences(sentenceBuf, false);
+              sentenceBuf = remaining;
+              sentences.forEach((s) => enqueue(s));
+            }
+          }
+          if (parsed.done) {
+            if (autoPlay) {
+              const [final] = drainSentences(sentenceBuf, true);
+              final.forEach((s) => enqueue(s));
+              sentenceBuf = "";
+            }
+            setSessionId(parsed.sessionId as string | null);
+          }
+        }
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "שגיאה");
@@ -127,56 +133,52 @@ export function VoiceChat({ scenario, userId }: Props) {
     } finally {
       setLoadingAI(false);
     }
-  }, [messages, sessionId, scenario.id, userId, autoPlay, loadingAI, playTTS]);
+  }, [messages, sessionId, scenario.id, userId, autoPlay, loadingAI, enqueue]);
 
-  function startRecording() {
+  const startRecording = useCallback(() => {
     const SR = window.SpeechRecognition ?? window.webkitSpeechRecognition;
-    if (!SR) {
-      toast.error("הדפדפן אינו תומך בזיהוי קול. נסה Chrome.");
-      return;
-    }
-
+    if (!SR) { toast.error("הדפדפן אינו תומך בזיהוי קול. נסה Chrome."); return; }
     stopTTS();
     const recognition = new SR();
     recognition.lang = "ar-SA";
     recognition.continuous = false;
     recognition.interimResults = true;
     recognitionRef.current = recognition;
-
     recognition.onresult = (event: ISpeechRecognitionEvent) => {
       const result = event.results[event.results.length - 1];
       const text = result[0].transcript;
       setTranscript(text);
-
-      if (result.isFinal) {
-        recognition.stop();
-        sendMessage(text);
-      }
+      if (result.isFinal) { recognition.stop(); sendMessage(text); }
     };
-
-    recognition.onerror = () => {
-      setIsRecording(false);
-      setTranscript("");
-    };
-
-    recognition.onend = () => {
-      setIsRecording(false);
-    };
-
+    recognition.onerror = () => { setIsRecording(false); setTranscript(""); };
+    recognition.onend = () => { setIsRecording(false); };
     recognition.start();
     setIsRecording(true);
-  }
+  }, [stopTTS, sendMessage]);
 
-  function stopRecording() {
-    recognitionRef.current?.stop();
-    setIsRecording(false);
+  const startRecordingRef = useRef(startRecording);
+  useEffect(() => { startRecordingRef.current = startRecording; });
+
+  // Auto-loop: re-activate mic after AI finishes speaking
+  useEffect(() => {
+    if (!conversationStarted || isRecording || loadingAI || isPlaying || !autoPlay) return;
+    const t = setTimeout(() => startRecordingRef.current(), 400);
+    return () => clearTimeout(t);
+  }, [isPlaying, loadingAI, isRecording, conversationStarted, autoPlay]);
+
+  function stopRecording() { recognitionRef.current?.stop(); setIsRecording(false); }
+
+  function handleMicPress() {
+    if (!conversationStarted) { setConversationStarted(true); startRecording(); return; }
+    if (isPlaying) { stopTTS(); return; }
+    if (isRecording) { stopRecording(); return; }
+    startRecording();
   }
 
   async function endSession() {
-    if (messages.length === 0) {
-      toast.info("אין הודעות בשיחה");
-      return;
-    }
+    if (messages.length === 0) { toast.info("אין הודעות בשיחה"); return; }
+    setConversationStarted(false);
+    stopRecording();
     setLoadingFeedback(true);
     stopTTS();
     try {
@@ -185,17 +187,11 @@ export function VoiceChat({ scenario, userId }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages, scenarioId: scenario.id, sessionId, userId }),
       });
-
       if (!res.ok) throw new Error("שגיאה ביצירת פידבק");
-
       const data = await res.json();
       setFeedback(data.feedback);
       setPhase("feedback");
-
-      // Auto-play feedback in Hebrew
-      if (data.feedback) {
-        setTimeout(() => playTTS(data.feedback, "he"), 500);
-      }
+      if (data.feedback) setTimeout(() => playTTS(data.feedback, "he"), 500);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "שגיאה");
     } finally {
@@ -204,278 +200,179 @@ export function VoiceChat({ scenario, userId }: Props) {
   }
 
   function resetSession() {
-    stopTTS();
-    stopRecording();
-    setPhase("briefing");
-    setMessages([]);
-    setFeedback("");
-    setSessionId(null);
-    setTranscript("");
+    stopTTS(); stopRecording();
+    setPhase("briefing"); setMessages([]); setFeedback("");
+    setSessionId(null); setTranscript(""); setConversationStarted(false);
   }
 
-  // ── Briefing phase ──────────────────────────────────────────────────────────
+  const difficultyColors: Record<string, string> = {
+    easy: "bg-green-100 text-green-700",
+    medium: "bg-yellow-100 text-yellow-700",
+    hard: "bg-red-100 text-red-700",
+  };
+
+  // ── Briefing ────────────────────────────────────────────────────────────────
   if (phase === "briefing") {
     return (
-      <div className="p-4 max-w-lg mx-auto space-y-5">
-        <div className="flex items-center gap-2 pt-2">
-          <Link href="/ai-practice" className="text-muted-foreground hover:text-foreground">
-            <ArrowRight className="size-4" />
-          </Link>
-          <div className="flex-1">
-            <h1 className="font-bold text-lg leading-tight">{scenario.name}</h1>
-            {scenario.difficulty && (
-              <Badge variant="outline" className="text-xs mt-0.5">
-                {DIFFICULTY_LABELS[scenario.difficulty as ScenarioDifficulty]}
-              </Badge>
-            )}
-          </div>
+      <div className="p-5 max-w-lg mx-auto space-y-5">
+        <div className="pt-2">
+          <h1 className="text-2xl font-black">{scenario.name}</h1>
+          {scenario.difficulty && (
+            <span className={`inline-block mt-1 text-xs font-medium px-2 py-0.5 rounded-full ${difficultyColors[scenario.difficulty as ScenarioDifficulty]}`}>
+              {DIFFICULTY_LABELS[scenario.difficulty as ScenarioDifficulty]}
+            </span>
+          )}
         </div>
 
-        {scenario.student_description && (
-          <Card>
-            <CardContent className="p-4 text-sm leading-relaxed">
-              {scenario.student_description}
-            </CardContent>
-          </Card>
-        )}
-
-        {scenario.student_role && (
-          <div className="space-y-1">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">תפקידך בתרחיש</p>
-            <p className="font-medium">{scenario.student_role}</p>
-          </div>
-        )}
-
-        {hints.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              שלבי ההכוונה ({hints.length} שלבים)
-            </p>
-            <ol className="space-y-2.5">
-              {hints.map((hint, i) => (
-                <li key={i} className="flex gap-3 text-sm items-start">
-                  <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
-                    {i + 1}
-                  </span>
-                  <span>{hint}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        )}
-
-        {!speechSupported && (
-          <p className="text-xs text-amber-600 bg-amber-50 rounded-md p-2">
-            הדפדפן שלך אינו תומך בזיהוי קול. תוכל להשתמש בקלט טקסט כחלופה.
-          </p>
-        )}
-
-        <Button
-          className="w-full gap-2"
-          size="lg"
-          onClick={() => setPhase("chat")}
-        >
-          <Mic className="size-4" />
-          התחל שיחה
-        </Button>
-      </div>
-    );
-  }
-
-  // ── Feedback phase ──────────────────────────────────────────────────────────
-  if (phase === "feedback") {
-    return (
-      <div className="p-4 max-w-lg mx-auto space-y-4">
-        <h1 className="text-xl font-bold pt-2">פידבק – {scenario.name}</h1>
-
-        <Card>
-          <CardContent className="p-4 text-sm leading-relaxed whitespace-pre-wrap">
-            {feedback}
+        <Card className="rounded-2xl border-s-4 border-s-primary shadow-[var(--shadow-card)]">
+          <CardContent className="p-5 space-y-3">
+            {scenario.student_description && (
+              <p className="text-sm leading-relaxed">{scenario.student_description}</p>
+            )}
+            {scenario.student_role && (
+              <div>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1">התפקיד שלך</p>
+                <p className="text-sm font-medium">{scenario.student_role}</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => isPlaying ? stopTTS() : playTTS(feedback, "he")}
-          >
-            {isPlaying ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
-            {isPlaying ? "עצור" : "השמע פידבק"}
-          </Button>
-        </div>
+        {hints.length > 0 && (
+          <div>
+            <button
+              onClick={() => setHintsOpen((o) => !o)}
+              className="flex items-center gap-1.5 text-sm font-semibold text-primary mb-2"
+            >
+              {hintsOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+              רמזים ({hints.length})
+            </button>
+            {hintsOpen && (
+              <Card className="rounded-2xl">
+                <CardContent className="p-4 space-y-2">
+                  {hints.map((hint, i) => (
+                    <p key={i} className="text-sm text-muted-foreground">
+                      {i + 1}. {hint}
+                    </p>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
 
-        <Separator />
-
-        <Button variant="outline" className="w-full gap-1.5" onClick={resetSession}>
-          <RotateCcw className="size-4" />
-          תרגול חדש
+        <Button
+          className="w-full h-12 rounded-xl font-bold text-base gap-2"
+          onClick={() => {
+            setPhase("chat");
+            setConversationStarted(true);
+          }}
+        >
+          <Mic className="size-5" />
+          התחל תרחיש
         </Button>
       </div>
     );
   }
 
-  // ── Chat phase ──────────────────────────────────────────────────────────────
-  return (
-    <div className="flex flex-col h-svh">
-
-      {/* Header */}
-      <div className="p-3 border-b space-y-2 shrink-0">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <Link href="/ai-practice" className="text-muted-foreground hover:text-foreground shrink-0">
-              <ArrowRight className="size-4" />
-            </Link>
-            <p className="font-bold text-sm truncate">{scenario.name}</p>
+  // ── Feedback ────────────────────────────────────────────────────────────────
+  if (phase === "feedback") {
+    return (
+      <div className="p-5 max-w-lg mx-auto space-y-5">
+        <div
+          className="flex flex-col items-center pt-6 pb-2"
+          style={{ animation: "celebrate 0.5s ease-out both" }}
+        >
+          <div className="w-16 h-16 rounded-full bg-[oklch(60%_0.22_145)] flex items-center justify-center mb-4">
+            <span className="text-3xl text-white">✓</span>
           </div>
-
-          <div className="flex items-center gap-1.5 shrink-0">
-            {/* Auto-play toggle */}
-            <button
-              onClick={() => setAutoPlay((v) => !v)}
-              title={autoPlay ? "כבה השמעה אוטומטית" : "הפעל השמעה אוטומטית"}
-              className={cn(
-                "p-1.5 rounded-md transition-colors",
-                autoPlay ? "text-primary" : "text-muted-foreground"
-              )}
-            >
-              {autoPlay ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
-            </button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs text-muted-foreground gap-1"
-              onClick={endSession}
-              disabled={messages.length === 0 || loadingAI || loadingFeedback}
-            >
-              {loadingFeedback ? <Loader2 className="size-3 animate-spin" /> : <StopCircle className="size-3" />}
-              סיים
-            </Button>
-          </div>
+          <h1 className="text-xl font-black">פידבק – {scenario.name}</h1>
         </div>
+        <Card className="rounded-2xl shadow-[var(--shadow-card)]">
+          <CardContent className="p-5 text-sm leading-relaxed whitespace-pre-wrap">
+            {feedback}
+          </CardContent>
+        </Card>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5 rounded-xl"
+          onClick={() => (isPlaying ? stopTTS() : playTTS(feedback, "he"))}
+        >
+          {isPlaying ? (
+            <><Volume2 className="size-4 animate-pulse" /> עצור</>
+          ) : (
+            <><Volume2 className="size-4" /> השמע פידבק בעברית</>
+          )}
+        </Button>
+        <Link href="/ai-practice">
+          <Button variant="outline" className="w-full rounded-xl">
+            תרחיש חדש
+          </Button>
+        </Link>
+      </div>
+    );
+  }
 
-        {/* Guidance steps – collapsible */}
-        {hints.length > 0 && (
-          <>
-            <button
-              onClick={() => setHintsOpen((o) => !o)}
-              className="flex items-center gap-1.5 text-xs text-primary font-medium"
-            >
-              שלבי ההכוונה ({hints.length})
-              {hintsOpen ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
-            </button>
-            {hintsOpen && (
-              <ol className="text-xs space-y-1 border-s-2 border-primary/30 ps-3 pe-1">
-                {hints.map((hint, i) => (
-                  <li key={i} className="flex gap-1.5 text-muted-foreground">
-                    <span className="font-semibold text-foreground shrink-0">{i + 1}.</span>
-                    {hint}
-                  </li>
-                ))}
-              </ol>
-            )}
-          </>
-        )}
+  // ── Chat (fullscreen orb) ────────────────────────────────────────────────────
+  const orbState: OrbState =
+    (loadingAI || loadingFeedback) && !isPlaying
+      ? "loading"
+      : isRecording
+      ? "listening"
+      : isPlaying
+      ? "speaking"
+      : "idle";
+
+  const stateLabel = !conversationStarted
+    ? "לחץ להתחלת שיחה"
+    : isRecording
+    ? "מקשיב..."
+    : isPlaying
+    ? "ה-AI מדבר..."
+    : loadingAI
+    ? "מעבד..."
+    : "מתכונן להאזין...";
+
+  return (
+    <div className="fixed inset-0 bg-[#0A0A0A] flex flex-col overflow-hidden">
+      {/* Minimal header */}
+      <div className="flex items-center gap-3 px-4 pt-12 pb-4">
+        <Link href="/ai-practice" className="text-white/60 hover:text-white/90">
+          <ArrowRight className="size-5" />
+        </Link>
+        <span className="text-white/70 text-sm font-medium">{scenario.name}</span>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-3 no-scrollbar">
-        {messages.length === 0 && (
-          <div className="text-center text-sm text-muted-foreground py-10 space-y-1">
-            <Mic className="size-8 mx-auto opacity-20" />
-            <p>לחץ על הכפתור ודבר ערבית</p>
-            <p className="text-xs">ה-AI יענה ויחזור אליך בקול</p>
-          </div>
-        )}
-
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}
-          >
-            <div
-              className={cn(
-                "max-w-[82%] rounded-2xl px-4 py-2.5 text-sm",
-                msg.role === "user"
-                  ? "bg-primary text-primary-foreground rounded-ee-sm"
-                  : "bg-muted rounded-es-sm"
-              )}
-              dir="rtl"
-              lang={msg.role === "assistant" ? "ar" : undefined}
-              style={msg.role === "assistant" ? { fontFamily: "var(--font-noto-arabic)" } : undefined}
-            >
-              {msg.content}
-              {/* Replay TTS for individual AI messages */}
-              {msg.role === "assistant" && (
-                <button
-                  onClick={() => isPlaying ? stopTTS() : playTTS(msg.content, "ar")}
-                  className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  <Volume2 className="size-3" />
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-
-        {(loadingAI || isPlaying) && (
-          <div className="flex justify-start">
-            <div className="bg-muted rounded-2xl rounded-es-sm px-4 py-3 flex items-center gap-2">
-              {loadingAI ? (
-                <Loader2 className="size-4 animate-spin text-muted-foreground" />
-              ) : (
-                <>
-                  <Volume2 className="size-4 text-primary animate-pulse" />
-                  <span className="text-xs text-muted-foreground">מדבר...</span>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
-      </div>
-
-      <Separator />
-
-      {/* Voice input bar */}
-      <div className="p-4 space-y-3 shrink-0">
-        {/* Transcript preview */}
+      {/* Center */}
+      <div className="flex-1 flex flex-col items-center justify-center gap-8 px-6">
         {transcript && (
-          <div className="text-sm text-center text-muted-foreground bg-muted/40 rounded-lg py-2 px-3" dir="rtl" lang="ar">
+          <p
+            className="text-white/60 text-sm text-center max-w-xs"
+            dir="rtl"
+            lang="ar"
+            style={{ fontFamily: "var(--font-noto-arabic)" }}
+          >
             {transcript}
-          </div>
+          </p>
         )}
 
-        {/* Mic button */}
-        <div className="flex items-center justify-center gap-4">
+        <VoiceOrb
+          state={orbState}
+          onClick={handleMicPress}
+          disabled={false}
+        />
+
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-white text-lg font-semibold text-center">{stateLabel}</p>
           <button
-            onClick={isRecording ? stopRecording : startRecording}
-            disabled={loadingAI || isPlaying || loadingFeedback}
-            className={cn(
-              "w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-lg",
-              isRecording
-                ? "bg-destructive text-destructive-foreground scale-110 animate-pulse"
-                : loadingAI || isPlaying
-                ? "bg-muted text-muted-foreground cursor-not-allowed"
-                : "bg-primary text-primary-foreground hover:scale-105 active:scale-95"
-            )}
+            onClick={endSession}
+            disabled={messages.length === 0 || loadingAI || loadingFeedback}
+            className="text-white/50 text-sm underline underline-offset-2 disabled:opacity-20 transition-opacity"
           >
-            {isRecording ? <MicOff className="size-6" /> : <Mic className="size-6" />}
+            {loadingFeedback ? "מכין פידבק..." : "סיים וקבל פידבק"}
           </button>
         </div>
-
-        <p className="text-center text-xs text-muted-foreground">
-          {isRecording
-            ? "מקשיב... לחץ שוב לסיום"
-            : isPlaying
-            ? "ה-AI מדבר..."
-            : loadingAI
-            ? "ממתין לתשובה..."
-            : "לחץ ודבר ערבית"}
-        </p>
       </div>
     </div>
   );
