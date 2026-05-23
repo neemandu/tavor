@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Mic, Volume2, Loader2 } from "lucide-react";
+import { Mic, Volume2 } from "lucide-react";
 import type { ChatMessage } from "@/types";
 import { useTTS } from "@/hooks/use-tts";
 import { VoiceOrb, type OrbState } from "@/components/voice-orb";
@@ -31,7 +31,7 @@ function drainSentences(buf: string, final: boolean): [string[], string] {
 interface Props { userId: string; }
 type Phase = "setup" | "chat" | "feedback";
 
-export function FreeChatInterface({ userId }: Props) {
+export function FreeChatInterface({ userId: _userId }: Props) {
   const [phase, setPhase] = useState<Phase>("setup");
   const [description, setDescription] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);

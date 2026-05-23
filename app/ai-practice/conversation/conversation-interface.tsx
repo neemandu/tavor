@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Volume2, Loader2, Clock } from "lucide-react";
+import { Volume2, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/types";
 import { useTTS } from "@/hooks/use-tts";
@@ -36,7 +36,7 @@ function formatTime(s: number) {
 interface Props { userId: string; }
 type Phase = "chat" | "feedback";
 
-export function ConversationInterface({ userId }: Props) {
+export function ConversationInterface({ userId: _userId }: Props) {
   const [phase, setPhase] = useState<Phase>("chat");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);

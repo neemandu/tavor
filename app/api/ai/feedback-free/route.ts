@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "לא מחובר" }, { status: 401 });
   }
 
-  const { messages, sessionId, sessionType } = (await request.json()) as {
+  const { messages, sessionId } = (await request.json()) as {
     messages: ChatMessage[];
     sessionId: string | null;
     sessionType: string;

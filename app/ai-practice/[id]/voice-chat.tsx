@@ -9,7 +9,6 @@ import {
   Mic, Volume2,
   ChevronDown, ChevronUp, ArrowRight,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import type { ChatMessage, Scenario, ScenarioDifficulty } from "@/types";
 import { DIFFICULTY_LABELS } from "@/types";
 import Link from "next/link";
@@ -45,7 +44,7 @@ export function VoiceChat({ scenario, userId }: Props) {
   const [loadingAI, setLoadingAI] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [loadingFeedback, setLoadingFeedback] = useState(false);
-  const [autoPlay, setAutoPlay] = useState(true);
+  const autoPlay = true;
   const [hintsOpen, setHintsOpen] = useState(false);
   const [conversationStarted, setConversationStarted] = useState(false);
 
@@ -185,12 +184,6 @@ export function VoiceChat({ scenario, userId }: Props) {
     } finally {
       setLoadingFeedback(false);
     }
-  }
-
-  function resetSession() {
-    stopTTS(); stopRecording();
-    setPhase("briefing"); setMessages([]); setFeedback("");
-    setSessionId(null); setTranscript(""); setConversationStarted(false);
   }
 
   const difficultyColors: Record<string, string> = {

@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, FileText, MessageSquare, Bell, Brain } from "lucide-react";
+import { Users, FileText, Bell, Brain } from "lucide-react";
 
 export default async function AdminDashboard() {
   const supabase = await createClient();
