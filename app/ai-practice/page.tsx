@@ -12,6 +12,7 @@ import {
   type ScenarioCategory,
 } from "@/types";
 import { ChevronLeft, Zap, PenLine, MessageCircle, List } from "lucide-react";
+import { SessionHistory } from "./session-history";
 
 type ModeCard = {
   href: string | null;
@@ -47,6 +48,29 @@ const MODES: ModeCard[] = [
 
 export default async function AIPracticePage() {
   const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: sessionsData } = await supabase
+    .from("ai_sessions")
+    .select(
+      `id, session_type, started_at, ended_at, feedback_text, messages, scenarios!left (name)`
+    )
+    .eq("user_id", user!.id)
+    .order("started_at", { ascending: false })
+    .limit(20);
+
+  const sessions = (sessionsData ?? []).map((s: Record<string, unknown>) => ({
+    id: s.id as string,
+    session_type: s.session_type as "scenario" | "free_practice" | "free_conversation",
+    started_at: s.started_at as string,
+    ended_at: s.ended_at as string | null,
+    feedback_text: s.feedback_text as string | null,
+    messages: s.messages as { role: string; content: string }[] | null,
+    scenario_name: (s.scenarios as { name?: string } | null)?.name ?? null,
+  }));
 
   const { data: scenariosData } = await supabase
     .from("scenarios")
@@ -147,6 +171,9 @@ export default async function AIPracticePage() {
             </div>
           )}
         </div>
+
+        {/* Session history */}
+        <SessionHistory sessions={sessions} />
       </div>
     </StudentShell>
   );
