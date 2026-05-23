@@ -43,8 +43,8 @@ function NavLinks({ onClose }: { onClose?: () => void }) {
             className={cn(
               "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
               pathname.startsWith(href)
-                ? "bg-foreground text-background font-medium"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground font-normal"
+                ? "bg-primary text-primary-foreground font-medium"
+                : "text-muted-foreground hover:bg-primary/5 hover:text-foreground font-normal"
             )}
           >
             <Icon className="size-4 shrink-0" />
