@@ -225,7 +225,7 @@ export default async function LeaderboardPage({
                               {row.name}
                             </span>
                             {isMe && (
-                              <span className="mr-2 text-xs text-primary font-normal">(אתה)</span>
+                              <span className="me-2 text-xs text-primary font-normal">(אתה)</span>
                             )}
                           </td>
                           <td className="p-3 text-end">
