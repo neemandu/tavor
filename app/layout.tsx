@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Rubik, Noto_Sans_Arabic } from "next/font/google";
+import { Alef, Noto_Sans_Arabic } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const hebrewFont = Rubik({
+const hebrewFont = Alef({
   variable: "--font-noto-hebrew",
   subsets: ["hebrew", "latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "700"],
   display: "swap",
 });
 
