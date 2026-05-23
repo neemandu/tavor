@@ -46,7 +46,7 @@ export function FreeChatInterface({ userId: _userId }: Props) {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
-  const { play: playTTS, enqueue, stop: stopTTS, isPlaying } = useTTS();
+  const { play: playTTS, enqueue, stop: stopTTS, isPlaying, unlock: unlockAudio } = useTTS();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -150,6 +150,7 @@ export function FreeChatInterface({ userId: _userId }: Props) {
   }
 
   function handleMicPress() {
+    unlockAudio();
     if (!conversationStarted) {
       setConversationStarted(true);
       startRecording();

@@ -52,7 +52,7 @@ export function ConversationInterface({ userId: _userId }: Props) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const { play: playTTS, enqueue, stop: stopTTS, isPlaying } = useTTS();
+  const { play: playTTS, enqueue, stop: stopTTS, isPlaying, unlock: unlockAudio } = useTTS();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -188,6 +188,7 @@ export function ConversationInterface({ userId: _userId }: Props) {
   function stopRecording() { recognitionRef.current?.stop(); setIsRecording(false); }
 
   function handleMicPress() {
+    unlockAudio();
     if (timeLeft === 0) return;
     if (!conversationStarted) { setConversationStarted(true); startRecording(); return; }
     if (isPlaying) { stopTTS(); return; }

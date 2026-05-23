@@ -10,6 +10,7 @@ function stripEmojis(text: string) {
 export function useTTS() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioResolveRef = useRef<(() => void) | null>(null);
+  const unlockedRef = useRef(false);
   // Queue of pre-fetched audio URL promises — starts fetching immediately on enqueue
   const queueRef = useRef<Promise<string | null>[]>([]);
   const processingRef = useRef(false);
@@ -109,5 +110,24 @@ export function useTTS() {
     drainQueue(generationRef.current);
   }, [stop, fetchAudio, drainQueue]);
 
-  return { play, enqueue, stop, isPlaying };
+  // Call this from a user-gesture handler (tap/click) to unlock audio on iOS.
+  // iOS blocks audio.play() unless the AudioContext was resumed inside a gesture.
+  const unlock = useCallback(() => {
+    if (unlockedRef.current) return;
+    unlockedRef.current = true;
+    try {
+      type WebkitWindow = Window & { webkitAudioContext?: typeof AudioContext };
+      const AC = window.AudioContext ?? (window as WebkitWindow).webkitAudioContext;
+      if (!AC) return;
+      const ctx = new AC();
+      const buf = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.start(0);
+      src.onended = () => ctx.close();
+    } catch { /* ignore */ }
+  }, []);
+
+  return { play, enqueue, stop, isPlaying, unlock };
 }

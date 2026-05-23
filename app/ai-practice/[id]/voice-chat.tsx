@@ -51,7 +51,7 @@ export function VoiceChat({ scenario, userId }: Props) {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
-  const { play: playTTS, enqueue, stop: stopTTS, isPlaying } = useTTS();
+  const { play: playTTS, enqueue, stop: stopTTS, isPlaying, unlock: unlockAudio } = useTTS();
 
   const hints = (scenario.hints as string[] | null) ?? [];
 
@@ -157,6 +157,7 @@ export function VoiceChat({ scenario, userId }: Props) {
   function stopRecording() { recognitionRef.current?.stop(); setIsRecording(false); }
 
   function handleMicPress() {
+    unlockAudio();
     if (!conversationStarted) { setConversationStarted(true); startRecording(); return; }
     if (isPlaying) { stopTTS(); return; }
     if (isRecording) { stopRecording(); return; }
