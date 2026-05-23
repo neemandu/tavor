@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useTTS } from "@/hooks/use-tts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -60,67 +61,6 @@ interface Props {
 
 type Phase = "briefing" | "chat" | "feedback";
 
-function useTTS() {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-
-  const play = useCallback(async (text: string, lang = "ar") => {
-    // Stop any current playback
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-
-    if (!text.trim()) return;
-    setIsPlaying(true);
-
-    try {
-      const res = await fetch("/api/ai/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, lang }),
-      });
-
-      if (!res.ok) {
-        // Fallback to browser TTS
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = lang === "he" ? "he-IL" : "ar-SA";
-        utterance.onend = () => setIsPlaying(false);
-        window.speechSynthesis.speak(utterance);
-        return;
-      }
-
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      audio.onended = () => {
-        setIsPlaying(false);
-        URL.revokeObjectURL(url);
-        audioRef.current = null;
-      };
-      audio.onerror = () => {
-        setIsPlaying(false);
-        URL.revokeObjectURL(url);
-        audioRef.current = null;
-      };
-      await audio.play();
-    } catch {
-      setIsPlaying(false);
-    }
-  }, []);
-
-  const stop = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-    window.speechSynthesis?.cancel();
-    setIsPlaying(false);
-  }, []);
-
-  return { play, stop, isPlaying };
-}
 
 export function VoiceChat({ scenario, userId }: Props) {
   const [phase, setPhase] = useState<Phase>("briefing");

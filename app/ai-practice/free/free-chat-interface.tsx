@@ -7,11 +7,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import {
-  Mic, MicOff, Volume2, VolumeX, StopCircle, Loader2, ArrowRight,
+  Mic, MicOff, Volume2, StopCircle, Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/types";
 import { TTSButton } from "@/components/tts-button";
+import { useTTS } from "@/hooks/use-tts";
 
 interface ISpeechRecognition extends EventTarget {
   lang: string; continuous: boolean; interimResults: boolean;
@@ -25,45 +26,6 @@ interface ISpeechRecognitionResultList { readonly length: number; [i: number]: I
 interface ISpeechRecognitionResult { readonly isFinal: boolean; readonly length: number; [i: number]: { readonly transcript: string }; }
 declare global { interface Window { SpeechRecognition: new () => ISpeechRecognition; webkitSpeechRecognition: new () => ISpeechRecognition; } }
 
-function useTTS() {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-
-  const play = useCallback(async (text: string, lang = "ar") => {
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
-    if (!text.trim()) return;
-    setIsPlaying(true);
-    try {
-      const res = await fetch("/api/ai/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, lang }),
-      });
-      if (!res.ok) {
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = lang === "he" ? "he-IL" : "ar-PS";
-        u.onend = () => setIsPlaying(false);
-        window.speechSynthesis.speak(u);
-        return;
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      audio.onended = () => { setIsPlaying(false); URL.revokeObjectURL(url); audioRef.current = null; };
-      audio.onerror = () => { setIsPlaying(false); URL.revokeObjectURL(url); audioRef.current = null; };
-      await audio.play();
-    } catch { setIsPlaying(false); }
-  }, []);
-
-  const stop = useCallback(() => {
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
-    window.speechSynthesis?.cancel();
-    setIsPlaying(false);
-  }, []);
-
-  return { play, stop, isPlaying };
-}
 
 interface Props { userId: string; }
 type Phase = "setup" | "chat" | "feedback";

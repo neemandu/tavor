@@ -17,6 +17,10 @@ export async function POST(request: NextRequest) {
   const { text, lang } = await request.json() as { text: string; lang?: string };
   if (!text?.trim()) return NextResponse.json({ error: "טקסט חסר" }, { status: 400 });
 
+  // Strip emojis and special characters that TTS narrates in English
+  const cleanText = text.replace(/\p{Emoji_Presentation}/gu, "").replace(/\p{Emoji}️/gu, "").trim();
+  if (!cleanText) return NextResponse.json({ error: "טקסט ריק לאחר ניקוי" }, { status: 400 });
+
   const voiceId = lang === "he" ? VOICE_HE : VOICE_AR;
 
   const response = await fetch(
@@ -28,7 +32,7 @@ export async function POST(request: NextRequest) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        text,
+        text: cleanText,
         model_id: "eleven_multilingual_v2",
         voice_settings: {
           stability: 0.5,
@@ -40,8 +44,8 @@ export async function POST(request: NextRequest) {
 
   if (!response.ok) {
     const err = await response.text();
-    console.error("ElevenLabs TTS error:", err);
-    return NextResponse.json({ error: "שגיאת TTS" }, { status: 500 });
+    console.error("ElevenLabs TTS error:", response.status, err);
+    return NextResponse.json({ error: "שגיאת TTS", detail: err }, { status: response.status });
   }
 
   const audioData = await response.arrayBuffer();
