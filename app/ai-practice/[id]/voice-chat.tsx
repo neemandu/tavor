@@ -18,12 +18,13 @@ import { VoiceOrb, type OrbState } from "@/components/voice-orb";
 function drainSentences(buf: string, final: boolean): [string[], string] {
   const sentences: string[] = [];
   let remaining = buf;
-  let m = /[.!?؟]/.exec(remaining);
+  let m = /[.!?؟،,]/.exec(remaining);
   while (m !== null) {
     const s = remaining.slice(0, m.index + 1).trim();
+    const isComma = m[0] === "،" || m[0] === ",";
     remaining = remaining.slice(m.index + 1).replace(/^\s+/, "");
-    if (s.length > 1) sentences.push(s);
-    m = /[.!?؟]/.exec(remaining);
+    if (isComma ? s.length >= 15 : s.length > 1) sentences.push(s);
+    m = /[.!?؟،,]/.exec(remaining);
   }
   if (final && remaining.trim().length > 1) {
     sentences.push(remaining.trim());
