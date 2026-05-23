@@ -2,15 +2,23 @@ export const dynamic = "force-dynamic";
 
 import { createClient } from "@/lib/supabase/server";
 import { StudentShell } from "@/components/student-shell";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { CATEGORY_LABELS, type VocabularyCategory } from "@/types";
 import { AudioPlayer } from "./audio-player";
 import { VocabularySearchBar } from "./search-bar";
+import { cn } from "@/lib/utils";
 
 interface PageProps {
   searchParams: Promise<{ q?: string; cat?: string }>;
 }
+
+const CATEGORY_COLORS: Record<string, string> = {
+  all: "bg-primary text-primary-foreground",
+  security: "bg-primary text-primary-foreground",
+  daily: "bg-teal-500 text-white",
+  checkpoint: "bg-indigo-500 text-white",
+  interrogation: "bg-amber-500 text-white",
+  other: "bg-muted text-muted-foreground",
+};
 
 export default async function VocabularyPage({ searchParams }: PageProps) {
   const { q, cat } = await searchParams;
@@ -36,27 +44,35 @@ export default async function VocabularyPage({ searchParams }: PageProps) {
   const words = wordsData ?? [];
 
   const categories = ["all", ...Object.keys(CATEGORY_LABELS)] as const;
+  const activeCat = cat && cat !== "all" ? cat : "all";
 
   return (
     <StudentShell>
       <div className="p-4 max-w-lg mx-auto space-y-4">
-        <h1 className="text-xl font-bold pt-2">אוצר מילים</h1>
+        <h1 className="text-3xl font-black pt-2">אוצר מילים</h1>
 
         {/* Search */}
         <VocabularySearchBar defaultValue={q} />
 
-        {/* Category filter */}
+        {/* Category tabs */}
         <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-          {categories.map((c) => (
-            <a key={c} href={`/vocabulary?${q ? `q=${q}&` : ""}cat=${c}`}>
-              <Badge
-                variant={cat === c || (!cat && c === "all") ? "default" : "outline"}
-                className="cursor-pointer whitespace-nowrap"
-              >
-                {c === "all" ? "הכל" : CATEGORY_LABELS[c as VocabularyCategory]}
-              </Badge>
-            </a>
-          ))}
+          {categories.map((c) => {
+            const isActive = c === activeCat;
+            return (
+              <a key={c} href={`/vocabulary?${q ? `q=${q}&` : ""}cat=${c}`}>
+                <span
+                  className={cn(
+                    "inline-block px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors cursor-pointer",
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/70"
+                  )}
+                >
+                  {c === "all" ? "הכל" : CATEGORY_LABELS[c as VocabularyCategory]}
+                </span>
+              </a>
+            );
+          })}
         </div>
 
         {/* Word count */}
@@ -72,54 +88,65 @@ export default async function VocabularyPage({ searchParams }: PageProps) {
         ) : (
           <div className="space-y-3">
             {words.map((word) => (
-              <Card key={word.id}>
-                <CardContent className="p-4 space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-0.5">
-                      <p
-                        className="text-xl font-semibold"
-                        dir="rtl"
-                        lang="ar"
-                        style={{ fontFamily: "var(--font-noto-arabic)" }}
-                      >
-                        {word.arabic_text}
+              <div
+                key={word.id}
+                className="rounded-2xl border border-border bg-card p-4 space-y-2 shadow-[var(--shadow-card)]"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-0.5 flex-1">
+                    <p
+                      className="text-2xl font-bold"
+                      dir="rtl"
+                      lang="ar"
+                      style={{ fontFamily: "var(--font-noto-arabic)" }}
+                    >
+                      {word.arabic_text}
+                    </p>
+                    {word.transliteration && (
+                      <p className="text-sm text-muted-foreground italic" dir="ltr">
+                        {word.transliteration}
                       </p>
-                      {word.transliteration && (
-                        <p className="text-sm text-muted-foreground italic" dir="ltr">
-                          {word.transliteration}
-                        </p>
-                      )}
-                    </div>
-
-                    {word.recording_path && (
-                      <AudioPlayer filePath={word.recording_path} />
                     )}
                   </div>
+                  {word.recording_path && (
+                    <div className="shrink-0">
+                      <AudioPlayer filePath={word.recording_path} />
+                    </div>
+                  )}
+                </div>
 
-                  <p className="text-base font-medium">{word.hebrew_translation}</p>
+                <p className="text-base font-semibold">{word.hebrew_translation}</p>
 
-                  {word.inflections && Object.keys(word.inflections).length > 0 && (
-                    <div className="text-sm text-muted-foreground space-y-0.5 border-t pt-2">
+                {word.inflections && Object.keys(word.inflections).length > 0 && (
+                  <details className="text-sm text-muted-foreground">
+                    <summary className="cursor-pointer font-medium text-primary text-xs">
+                      גזרות
+                    </summary>
+                    <div className="mt-2 space-y-0.5 border-t border-border pt-2">
                       {Object.entries(word.inflections as Record<string, string>).map(
                         ([k, v]) => (
                           <p key={k}>
                             <span className="font-medium">{k}:</span>{" "}
-                            <span dir="rtl" lang="ar" style={{ fontFamily: "var(--font-noto-arabic)" }}>
+                            <span
+                              dir="rtl"
+                              lang="ar"
+                              style={{ fontFamily: "var(--font-noto-arabic)" }}
+                            >
                               {v}
                             </span>
                           </p>
                         )
                       )}
                     </div>
-                  )}
+                  </details>
+                )}
 
-                  {word.category && (
-                    <Badge variant="outline" className="text-xs">
-                      {CATEGORY_LABELS[word.category as VocabularyCategory]}
-                    </Badge>
-                  )}
-                </CardContent>
-              </Card>
+                {word.category && (
+                  <span className="inline-block text-xs font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                    {CATEGORY_LABELS[word.category as VocabularyCategory]}
+                  </span>
+                )}
+              </div>
             ))}
           </div>
         )}
