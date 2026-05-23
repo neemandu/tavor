@@ -3,6 +3,10 @@
 import { useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
 
+function stripEmojis(text: string) {
+  return text.replace(/\p{Emoji_Presentation}/gu, "").replace(/\p{Emoji}️/gu, "").trim();
+}
+
 export function useTTS() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioResolveRef = useRef<(() => void) | null>(null);
@@ -86,7 +90,7 @@ export function useTTS() {
 
   // Enqueue a sentence — starts pre-fetching immediately in parallel
   const enqueue = useCallback((text: string) => {
-    if (!text.trim()) return;
+    if (!stripEmojis(text)) return;
     queueRef.current.push(fetchAudio(text, false));
     if (!processingRef.current) {
       processingRef.current = true;
@@ -97,7 +101,7 @@ export function useTTS() {
   // One-shot play (feedback, message replay) — clears queue first
   const play = useCallback((text: string, _lang = "ar") => {
     stop();
-    if (!text.trim()) return;
+    if (!stripEmojis(text)) return;
     queueRef.current.push(fetchAudio(text, true));
     processingRef.current = true;
     drainQueue(generationRef.current);
