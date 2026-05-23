@@ -3,20 +3,30 @@
 import { useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
 
+const SILENT_WAV =
+  "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=";
+
 function stripEmojis(text: string) {
   return text.replace(/\p{Emoji_Presentation}/gu, "").replace(/\p{Emoji}️/gu, "").trim();
 }
 
 export function useTTS() {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // One persistent <audio> element — unlock it once in a user gesture,
+  // then reuse for all TTS so iOS never blocks subsequent plays.
+  const audioElRef = useRef<HTMLAudioElement | null>(null);
   const audioResolveRef = useRef<(() => void) | null>(null);
-  const unlockedRef = useRef(false);
-  // Queue of pre-fetched audio URL promises — starts fetching immediately on enqueue
   const queueRef = useRef<Promise<string | null>[]>([]);
   const processingRef = useRef(false);
   const controllerRef = useRef(new AbortController());
   const generationRef = useRef(0);
   const [isPlaying, setIsPlaying] = useState(false);
+
+  const getAudioEl = useCallback(() => {
+    if (!audioElRef.current) {
+      audioElRef.current = new Audio();
+    }
+    return audioElRef.current;
+  }, []);
 
   const fetchAudio = useCallback((text: string, showError = false): Promise<string | null> => {
     const { signal } = controllerRef.current;
@@ -45,9 +55,10 @@ export function useTTS() {
     processingRef.current = false;
     audioResolveRef.current?.();
     audioResolveRef.current = null;
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
+    const el = audioElRef.current;
+    if (el) {
+      el.pause();
+      el.src = "";
     }
     setIsPlaying(false);
   }, []);
@@ -67,19 +78,18 @@ export function useTTS() {
       if (!url) continue;
 
       setIsPlaying(true);
+      const el = getAudioEl();
       await new Promise<void>((resolve) => {
         audioResolveRef.current = resolve;
-        const audio = new Audio(url);
-        audioRef.current = audio;
         const cleanup = () => {
           URL.revokeObjectURL(url);
-          audioRef.current = null;
           audioResolveRef.current = null;
           resolve();
         };
-        audio.onended = cleanup;
-        audio.onerror = cleanup;
-        audio.play().catch(cleanup);
+        el.onended = cleanup;
+        el.onerror = cleanup;
+        el.src = url;
+        el.play().catch(cleanup);
       });
     }
 
@@ -87,20 +97,18 @@ export function useTTS() {
       processingRef.current = false;
       setIsPlaying(false);
     }
-  }, []);
+  }, [getAudioEl]);
 
-  // Enqueue a sentence — starts pre-fetching immediately in parallel
   const enqueue = useCallback((text: string) => {
     if (!stripEmojis(text)) return;
     queueRef.current.push(fetchAudio(text, false));
     if (!processingRef.current) {
       processingRef.current = true;
-      setIsPlaying(true); // mark busy immediately so auto-loop doesn't fire before audio loads
+      setIsPlaying(true);
       drainQueue(generationRef.current);
     }
   }, [fetchAudio, drainQueue]);
 
-  // One-shot play (feedback, message replay) — clears queue first
   const play = useCallback((text: string, _lang = "ar") => {
     stop();
     if (!stripEmojis(text)) return;
@@ -110,24 +118,13 @@ export function useTTS() {
     drainQueue(generationRef.current);
   }, [stop, fetchAudio, drainQueue]);
 
-  // Call this from a user-gesture handler (tap/click) to unlock audio on iOS.
-  // iOS blocks audio.play() unless the AudioContext was resumed inside a gesture.
+  // Must be called from a user-gesture handler (tap/click).
+  // Plays a silent WAV on the persistent element to unlock it for iOS.
   const unlock = useCallback(() => {
-    if (unlockedRef.current) return;
-    unlockedRef.current = true;
-    try {
-      type WebkitWindow = Window & { webkitAudioContext?: typeof AudioContext };
-      const AC = window.AudioContext ?? (window as WebkitWindow).webkitAudioContext;
-      if (!AC) return;
-      const ctx = new AC();
-      const buf = ctx.createBuffer(1, 1, 22050);
-      const src = ctx.createBufferSource();
-      src.buffer = buf;
-      src.connect(ctx.destination);
-      src.start(0);
-      src.onended = () => ctx.close();
-    } catch { /* ignore */ }
-  }, []);
+    const el = getAudioEl();
+    el.src = SILENT_WAV;
+    el.play().catch(() => {});
+  }, [getAudioEl]);
 
   return { play, enqueue, stop, isPlaying, unlock };
 }
