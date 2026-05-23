@@ -6,19 +6,13 @@ import type { ChatMessage } from "@/types";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return NextResponse.json({ error: "לא מחובר" }, { status: 401 });
+  const userId = session.user.id;
 
-  if (!user) {
-    return NextResponse.json({ error: "לא מחובר" }, { status: 401 });
-  }
-
-  const { messages, scenarioId, sessionId } = await request.json() as {
+  const { messages, scenarioId } = await request.json() as {
     messages: ChatMessage[];
     scenarioId: string;
-    sessionId: string | null;
-    userId: string;
   };
 
   const adminSupabase = createAdminClient();
@@ -43,19 +37,17 @@ export async function POST(request: NextRequest) {
     const { text, tokens } = await generateFeedback(messages, scenario);
     const now = new Date().toISOString();
 
-    if (sessionId) {
-      await adminSupabase
-        .from("ai_sessions")
-        .update({
-          feedback_text: text,
-          ended_at: now,
-          tokens_used: tokens,
-        })
-        .eq("id", sessionId);
-    }
+    await adminSupabase.from("ai_sessions").insert({
+      user_id: userId,
+      scenario_id: scenarioId,
+      session_type: "scenario",
+      messages,
+      tokens_used: tokens,
+      feedback_text: text,
+      ended_at: now,
+    });
 
-    // Award 10 points for completing a scenario + update streak
-    await awardPoints(user.id, 10, "scenario_complete", { scenario_id: scenarioId });
+    await awardPoints(userId, 10, "scenario_complete", { scenario_id: scenarioId });
 
     return NextResponse.json({ feedback: text });
   } catch (err) {

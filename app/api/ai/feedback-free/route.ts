@@ -9,17 +9,12 @@ const anthropic = new Anthropic({
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return NextResponse.json({ error: "לא מחובר" }, { status: 401 });
+  const userId = session.user.id;
 
-  if (!user) {
-    return NextResponse.json({ error: "לא מחובר" }, { status: 401 });
-  }
-
-  const { messages, sessionId } = (await request.json()) as {
+  const { messages, sessionType } = (await request.json()) as {
     messages: ChatMessage[];
-    sessionId: string | null;
     sessionType: string;
   };
 
@@ -69,18 +64,15 @@ ${conversation}
       response.usage.input_tokens + response.usage.output_tokens;
 
     const adminSupabase = createAdminClient();
-    const now = new Date().toISOString();
-
-    if (sessionId) {
-      await adminSupabase
-        .from("ai_sessions")
-        .update({
-          feedback_text: text,
-          ended_at: now,
-          tokens_used: tokens,
-        })
-        .eq("id", sessionId);
-    }
+    await adminSupabase.from("ai_sessions").insert({
+      user_id: userId,
+      scenario_id: null,
+      session_type: sessionType ?? "free_conversation",
+      messages,
+      tokens_used: tokens,
+      feedback_text: text,
+      ended_at: new Date().toISOString(),
+    });
 
     return NextResponse.json({ feedback: text });
   } catch (err) {
