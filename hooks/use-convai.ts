@@ -47,6 +47,8 @@ export function useConvai({ signedUrl, systemPrompt, onEnd }: Options) {
           }
         },
         onError: (msg) => {
+          // Mark as ended so onDisconnect doesn't also trigger feedback
+          endCalledRef.current = true;
           toast.error(typeof msg === "string" ? msg : "שגיאה בשיחה");
           setOrbState("idle");
         },

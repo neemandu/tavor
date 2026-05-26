@@ -35,9 +35,10 @@ export function FreeChatInterface({ userId: _userId }: Props) {
       });
       if (!res.ok) throw new Error("שגיאה ביצירת פידבק");
       const data = await res.json();
+      if (!data.feedback) { toast.error("לא הייתה שיחה לנתח"); setPhase("setup"); return; }
       setFeedback(data.feedback);
       setPhase("feedback");
-      if (data.feedback) setTimeout(() => playTTS(data.feedback, "he"), 400);
+      setTimeout(() => playTTS(data.feedback, "he"), 400);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "שגיאה");
     } finally {
