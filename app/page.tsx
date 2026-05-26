@@ -76,7 +76,7 @@ export default async function StudentHome() {
   let myEntry: LeaderboardRow | undefined;
 
   if (courseId) {
-    const [{ data: courseData }, { data: lbData }] = await Promise.all([
+    const [{ data: courseData }, { data: lbData, error: lbError }] = await Promise.all([
       adminSupabase
         .from("courses")
         .select("show_leaderboard")
@@ -84,6 +84,8 @@ export default async function StudentHome() {
         .maybeSingle(),
       adminSupabase.rpc("get_leaderboard", { p_course_id: courseId, p_period: "all" }),
     ]);
+
+    if (lbError) console.error("get_leaderboard RPC error:", lbError);
 
     if (courseData?.show_leaderboard !== false) {
       const rows: LeaderboardRow[] = (lbData ?? []) as LeaderboardRow[];

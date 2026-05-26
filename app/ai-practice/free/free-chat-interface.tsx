@@ -1,33 +1,14 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Mic, Volume2 } from "lucide-react";
-import type { ChatMessage } from "@/types";
+import { Volume2 } from "lucide-react";
 import { useTTS } from "@/hooks/use-tts";
-import { VoiceOrb, type OrbState } from "@/components/voice-orb";
-
-
-function drainSentences(buf: string, final: boolean): [string[], string] {
-  const sentences: string[] = [];
-  let remaining = buf;
-  let m = /[.!?؟،,]/.exec(remaining);
-  while (m !== null) {
-    const s = remaining.slice(0, m.index + 1).trim();
-    const isComma = m[0] === "،" || m[0] === ",";
-    remaining = remaining.slice(m.index + 1).replace(/^\s+/, "");
-    if (isComma ? s.length >= 15 : s.length > 1) sentences.push(s);
-    m = /[.!?؟،,]/.exec(remaining);
-  }
-  if (final && remaining.trim().length > 1) {
-    sentences.push(remaining.trim());
-    remaining = "";
-  }
-  return [sentences, remaining];
-}
+import { useConvai } from "@/hooks/use-convai";
+import { VoiceOrb } from "@/components/voice-orb";
 
 interface Props { userId: string; }
 type Phase = "setup" | "chat" | "feedback";
@@ -35,132 +16,22 @@ type Phase = "setup" | "chat" | "feedback";
 export function FreeChatInterface({ userId: _userId }: Props) {
   const [phase, setPhase] = useState<Phase>("setup");
   const [description, setDescription] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [loadingFeedback, setLoadingFeedback] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [transcript, setTranscript] = useState("");
-  const [conversationStarted, setConversationStarted] = useState(false);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [systemPrompt, setSystemPrompt] = useState<string | undefined>();
+  const [starting, setStarting] = useState(false);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<ISpeechRecognition | null>(null);
-  const { play: playTTS, enqueue, stop: stopTTS, isPlaying, unlock: unlockAudio } = useTTS();
+  const { play: playTTS, stop: stopTTS, isPlaying } = useTTS();
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim() || loading) return;
-    setTranscript("");
-    const userMsg: ChatMessage = { role: "user", content: text };
-    const newMessages = [...messages, userMsg];
-    setMessages([...newMessages, { role: "assistant", content: "" }]);
-    setLoading(true);
-
-    let fullText = "";
-    let sentenceBuf = "";
-
-    try {
-      const res = await fetch("/api/ai/free-chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMessages, description: description.trim(), sessionId, sessionType: "free_practice" }),
-      });
-      if (!res.ok || !res.body) throw new Error("שגיאה בשיחה עם AI");
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let sseBuffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        sseBuffer += decoder.decode(value, { stream: true });
-        const events = sseBuffer.split("\n\n");
-        sseBuffer = events.pop() ?? "";
-
-        for (const event of events) {
-          const dataLine = event.split("\n").find((l) => l.startsWith("data: "));
-          if (!dataLine) continue;
-          let parsed: Record<string, unknown>;
-          try { parsed = JSON.parse(dataLine.slice(6)); } catch { continue; }
-          if (parsed.error) throw new Error(parsed.error as string);
-          if (parsed.text) {
-            fullText += parsed.text as string;
-            sentenceBuf += parsed.text as string;
-            setMessages((prev) => { const c = [...prev]; c[c.length - 1] = { role: "assistant", content: fullText }; return c; });
-            const [sentences, remaining] = drainSentences(sentenceBuf, false);
-            sentenceBuf = remaining;
-            sentences.forEach((s) => enqueue(s));
-          }
-          if (parsed.done) {
-            const [final] = drainSentences(sentenceBuf, true);
-            final.forEach((s) => enqueue(s));
-            sentenceBuf = "";
-            setSessionId(parsed.sessionId as string | null);
-          }
-        }
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "שגיאה");
-      setMessages(newMessages);
-    } finally {
-      setLoading(false);
-    }
-  }, [messages, description, sessionId, loading, enqueue]);
-
-  const startRecording = useCallback(() => {
-    const SR = window.SpeechRecognition ?? window.webkitSpeechRecognition;
-    if (!SR) { toast.error("הדפדפן אינו תומך בזיהוי קול. נסה Chrome."); return; }
-    stopTTS();
-    const recognition = new SR();
-    recognition.lang = "ar-PS";
-    recognition.continuous = false;
-    recognition.interimResults = true;
-    recognitionRef.current = recognition;
-    recognition.onresult = (e: ISpeechRecognitionEvent) => {
-      const result = e.results[e.results.length - 1];
-      const text = result[0].transcript;
-      setTranscript(text);
-      if (result.isFinal) { recognition.stop(); sendMessage(text); }
-    };
-    recognition.onerror = () => { setIsRecording(false); setTranscript(""); };
-    recognition.onend = () => { setIsRecording(false); };
-    recognition.start();
-    setIsRecording(true);
-  }, [stopTTS, sendMessage]);
-
-  function stopRecording() {
-    recognitionRef.current?.stop();
-    setIsRecording(false);
-  }
-
-  function handleMicPress() {
-    unlockAudio();
-    if (!conversationStarted) {
-      setConversationStarted(true);
-      startRecording();
-      return;
-    }
-    if (isPlaying) { stopTTS(); return; } // interrupt AI
-    if (isRecording) { stopRecording(); return; }
-    startRecording();
-  }
-
-  async function endSession() {
-    if (messages.length === 0) { toast.info("לא ניתן לסיים שיחה ריקה"); return; }
-    setConversationStarted(false);
-    stopRecording();
+  const handleConversationEnd = useCallback(async (conversationId: string) => {
     setLoadingFeedback(true);
     stopTTS();
     try {
-      const res = await fetch("/api/ai/feedback-free", {
+      const res = await fetch("/api/ai/convai-feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages, sessionId, sessionType: "free_practice" }),
+        body: JSON.stringify({ conversationId, sessionType: "free_practice" }),
       });
       if (!res.ok) throw new Error("שגיאה ביצירת פידבק");
       const data = await res.json();
@@ -171,6 +42,33 @@ export function FreeChatInterface({ userId: _userId }: Props) {
       toast.error(err instanceof Error ? err.message : "שגיאה");
     } finally {
       setLoadingFeedback(false);
+    }
+  }, [stopTTS, playTTS]);
+
+  const { orbState, transcript, endSession } = useConvai({
+    signedUrl,
+    systemPrompt,
+    onEnd: handleConversationEnd,
+  });
+
+  async function startChat() {
+    if (!description.trim()) { toast.error("נא לתאר את הסיטואציה"); return; }
+    setStarting(true);
+    try {
+      const res = await fetch("/api/ai/convai-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: description.trim(), sessionType: "free_practice" }),
+      });
+      if (!res.ok) throw new Error("שגיאה בהתחברות");
+      const data = await res.json();
+      setSystemPrompt(data.systemPrompt);
+      setSignedUrl(data.signedUrl);
+      setPhase("chat");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "שגיאה");
+    } finally {
+      setStarting(false);
     }
   }
 
@@ -189,13 +87,8 @@ export function FreeChatInterface({ userId: _userId }: Props) {
           className="resize-none min-h-[120px]"
           dir="rtl"
         />
-        <Button className="w-full gap-2" onClick={() => {
-          if (!description.trim()) { toast.error("נא לתאר את הסיטואציה"); return; }
-          setPhase("chat");
-          setConversationStarted(true);
-        }}>
-          <Mic className="size-4" />
-          התחל שיחה קולית
+        <Button className="w-full" onClick={startChat} disabled={starting}>
+          {starting ? "מתחבר..." : "התחל שיחה קולית"}
         </Button>
       </div>
     );
@@ -205,19 +98,14 @@ export function FreeChatInterface({ userId: _userId }: Props) {
   if (phase === "feedback") {
     return (
       <div className="p-5 max-w-lg mx-auto space-y-5">
-        <div
-          className="flex flex-col items-center pt-6 pb-2"
-          style={{ animation: "celebrate 0.5s ease-out both" }}
-        >
+        <div className="flex flex-col items-center pt-6 pb-2" style={{ animation: "celebrate 0.5s ease-out both" }}>
           <div className="w-16 h-16 rounded-full bg-[oklch(60%_0.22_145)] flex items-center justify-center mb-4">
             <span className="text-3xl text-white">✓</span>
           </div>
           <h1 className="text-xl font-black">פידבק – תרגול חופשי</h1>
         </div>
         <Card className="rounded-2xl shadow-[var(--shadow-card)]">
-          <CardContent className="p-5 text-sm leading-relaxed whitespace-pre-wrap">
-            {feedback}
-          </CardContent>
+          <CardContent className="p-5 text-sm leading-relaxed whitespace-pre-wrap">{feedback}</CardContent>
         </Card>
         <Button
           variant="outline"
@@ -237,11 +125,9 @@ export function FreeChatInterface({ userId: _userId }: Props) {
           onClick={() => {
             stopTTS();
             setPhase("setup");
-            setMessages([]);
             setFeedback("");
-            setSessionId(null);
             setDescription("");
-            setConversationStarted(false);
+            setSignedUrl(null);
           }}
         >
           תרגול חדש
@@ -250,57 +136,37 @@ export function FreeChatInterface({ userId: _userId }: Props) {
     );
   }
 
-  // ── Chat (fullscreen orb) ────────────────────────────────────────────────────
-  const orbState: OrbState =
-    loading && !isPlaying
-      ? "loading"
-      : isRecording
-      ? "listening"
-      : isPlaying
-      ? "speaking"
-      : "idle";
-
-  const stateLabel = !conversationStarted
-    ? "לחץ להתחלת שיחה"
-    : isRecording
+  // ── Chat ────────────────────────────────────────────────────────────────────
+  const stateLabel = loadingFeedback
+    ? "מכין פידבק..."
+    : orbState === "loading"
+    ? "מתחבר..."
+    : orbState === "listening"
     ? "מקשיב..."
-    : isPlaying
+    : orbState === "speaking"
     ? "ה-AI מדבר..."
-    : loading
-    ? "מעבד..."
-    : "לחץ לדבר";
+    : "ממתין";
 
   return (
     <div className="fixed inset-0 bg-[#0A0A0A] flex flex-col overflow-hidden">
-      {/* Minimal header */}
       <div className="flex items-center gap-3 px-4 pt-12 pb-4">
         <span className="text-white/50 text-sm line-clamp-1">תרגול חופשי · {description}</span>
       </div>
 
-      {/* Center */}
       <div className="flex-1 flex flex-col items-center justify-center gap-8 px-6">
         {transcript && (
-          <p
-            className="text-white/60 text-sm text-center max-w-xs"
-            dir="rtl"
-            lang="ar"
-            style={{ fontFamily: "var(--font-noto-arabic)" }}
-          >
+          <p className="text-white/60 text-sm text-center max-w-xs" dir="rtl" lang="ar" style={{ fontFamily: "var(--font-noto-arabic)" }}>
             {transcript}
           </p>
         )}
 
-        <VoiceOrb
-          state={orbState}
-          onClick={handleMicPress}
-          disabled={false}
-        />
+        <VoiceOrb state={orbState} onClick={() => {}} disabled={false} />
 
         <div className="flex flex-col items-center gap-4">
           <p className="text-white text-lg font-semibold text-center">{stateLabel}</p>
           <button
             onClick={endSession}
-            disabled={messages.length === 0 || loading || loadingFeedback}
+            disabled={loadingFeedback}
             className="text-white/50 text-sm underline underline-offset-2 disabled:opacity-20 transition-opacity"
           >
             {loadingFeedback ? "מכין פידבק..." : "סיים וקבל פידבק"}

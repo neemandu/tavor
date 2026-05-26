@@ -4,9 +4,10 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ArrowRight, Trash2, CheckCircle } from "lucide-react";
+import { ArrowRight, Trash2, CheckCircle, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useTTS } from "@/hooks/use-tts";
 import type { ArabicLetter } from "@/lib/arabic-letters";
 
 interface LetterPracticeProps {
@@ -23,6 +24,7 @@ const FORM_LABELS: Record<keyof ArabicLetter["forms"], string> = {
 
 export function LetterPractice({ letter, alreadyMastered }: LetterPracticeProps) {
   const router = useRouter();
+  const { play: playTTS, isPlaying } = useTTS();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -160,17 +162,29 @@ export function LetterPractice({ letter, alreadyMastered }: LetterPracticeProps)
 
       {/* Letter header */}
       <div className="flex items-center gap-4">
-        <span
-          className="text-7xl leading-none"
+        <button
+          onClick={() => playTTS(letter.name, "ar")}
+          className="text-7xl leading-none focus:outline-none relative group"
           dir="rtl"
           lang="ar"
           style={{ fontFamily: "var(--font-noto-arabic)" }}
+          title="לחץ לשמוע את האות"
         >
           {letter.arabic}
-        </span>
+          <span className="absolute -bottom-1 -right-1 size-6 rounded-full bg-primary flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <Volume2 className="size-3 text-primary-foreground" />
+          </span>
+        </button>
         <div>
           <h1 className="text-2xl font-bold">{letter.nameHe}</h1>
           <p className="text-muted-foreground text-sm">{letter.pronunciation}</p>
+          <button
+            onClick={() => playTTS(letter.name, "ar")}
+            className="mt-1.5 flex items-center gap-1 text-xs text-primary hover:underline"
+          >
+            <Volume2 className={`size-3 ${isPlaying ? "animate-pulse" : ""}`} />
+            {isPlaying ? "מנגן..." : "שמע את האות"}
+          </button>
           {mastered && (
             <p className="text-green-600 text-sm font-medium flex items-center gap-1 mt-1">
               <CheckCircle className="size-4" />

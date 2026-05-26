@@ -82,10 +82,11 @@ export default async function LeaderboardPage({
   }
 
   // Call leaderboard RPC
-  const { data: rawRows } = await adminSupabase.rpc("get_leaderboard", {
+  const { data: rawRows, error: lbError } = await adminSupabase.rpc("get_leaderboard", {
     p_course_id: courseId,
     p_period: period,
   });
+  if (lbError) console.error("get_leaderboard RPC error:", lbError);
 
   const rows: LeaderboardRow[] = (rawRows ?? []) as LeaderboardRow[];
 

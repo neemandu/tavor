@@ -1,170 +1,39 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useTTS } from "@/hooks/use-tts";
+import { useConvai } from "@/hooks/use-convai";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import {
-  Mic, Volume2,
-  ChevronDown, ChevronUp, ArrowRight,
-} from "lucide-react";
-import type { ChatMessage, Scenario, ScenarioDifficulty } from "@/types";
+import { ChevronDown, ChevronUp, ArrowRight, Volume2 } from "lucide-react";
+import type { Scenario, ScenarioDifficulty } from "@/types";
 import { DIFFICULTY_LABELS } from "@/types";
 import Link from "next/link";
-import { VoiceOrb, type OrbState } from "@/components/voice-orb";
-
-
-function drainSentences(buf: string, final: boolean): [string[], string] {
-  const sentences: string[] = [];
-  let remaining = buf;
-  let m = /[.!?؟،,]/.exec(remaining);
-  while (m !== null) {
-    const s = remaining.slice(0, m.index + 1).trim();
-    const isComma = m[0] === "،" || m[0] === ",";
-    remaining = remaining.slice(m.index + 1).replace(/^\s+/, "");
-    if (isComma ? s.length >= 15 : s.length > 1) sentences.push(s);
-    m = /[.!?؟،,]/.exec(remaining);
-  }
-  if (final && remaining.trim().length > 1) {
-    sentences.push(remaining.trim());
-    remaining = "";
-  }
-  return [sentences, remaining];
-}
+import { VoiceOrb } from "@/components/voice-orb";
 
 interface Props { scenario: Scenario; userId: string; }
 type Phase = "briefing" | "chat" | "feedback";
 
-export function VoiceChat({ scenario, userId }: Props) {
+export function VoiceChat({ scenario, userId: _userId }: Props) {
   const [phase, setPhase] = useState<Phase>("briefing");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [transcript, setTranscript] = useState("");
-  const [loadingAI, setLoadingAI] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [loadingFeedback, setLoadingFeedback] = useState(false);
-  const autoPlay = true;
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [systemPrompt, setSystemPrompt] = useState<string | undefined>();
+  const [starting, setStarting] = useState(false);
   const [hintsOpen, setHintsOpen] = useState(false);
-  const [conversationStarted, setConversationStarted] = useState(false);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<ISpeechRecognition | null>(null);
-  const { play: playTTS, enqueue, stop: stopTTS, isPlaying, unlock: unlockAudio } = useTTS();
+  const { play: playTTS, stop: stopTTS, isPlaying } = useTTS();
 
-  const hints = (scenario.hints as string[] | null) ?? [];
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim() || loadingAI) return;
-    setTranscript("");
-    const userMsg: ChatMessage = { role: "user", content: text };
-    const newMessages = [...messages, userMsg];
-    setMessages([...newMessages, { role: "assistant", content: "" }]);
-    setLoadingAI(true);
-
-    let fullText = "";
-    let sentenceBuf = "";
-
-    try {
-      const res = await fetch("/api/ai/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMessages, scenarioId: scenario.id, userId, sessionId }),
-      });
-      if (!res.ok || !res.body) throw new Error("שגיאה בשיחה עם AI");
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let sseBuffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        sseBuffer += decoder.decode(value, { stream: true });
-        const events = sseBuffer.split("\n\n");
-        sseBuffer = events.pop() ?? "";
-
-        for (const event of events) {
-          const dataLine = event.split("\n").find((l) => l.startsWith("data: "));
-          if (!dataLine) continue;
-          let parsed: Record<string, unknown>;
-          try { parsed = JSON.parse(dataLine.slice(6)); } catch { continue; }
-          if (parsed.error) throw new Error(parsed.error as string);
-          if (parsed.text) {
-            fullText += parsed.text as string;
-            sentenceBuf += parsed.text as string;
-            setMessages((prev) => { const c = [...prev]; c[c.length - 1] = { role: "assistant", content: fullText }; return c; });
-            if (autoPlay) {
-              const [sentences, remaining] = drainSentences(sentenceBuf, false);
-              sentenceBuf = remaining;
-              sentences.forEach((s) => enqueue(s));
-            }
-          }
-          if (parsed.done) {
-            if (autoPlay) {
-              const [final] = drainSentences(sentenceBuf, true);
-              final.forEach((s) => enqueue(s));
-              sentenceBuf = "";
-            }
-            setSessionId(parsed.sessionId as string | null);
-          }
-        }
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "שגיאה");
-      setMessages(newMessages);
-    } finally {
-      setLoadingAI(false);
-    }
-  }, [messages, sessionId, scenario.id, userId, autoPlay, loadingAI, enqueue]);
-
-  const startRecording = useCallback(() => {
-    const SR = window.SpeechRecognition ?? window.webkitSpeechRecognition;
-    if (!SR) { toast.error("הדפדפן אינו תומך בזיהוי קול. נסה Chrome."); return; }
-    stopTTS();
-    const recognition = new SR();
-    recognition.lang = "ar-SA";
-    recognition.continuous = false;
-    recognition.interimResults = true;
-    recognitionRef.current = recognition;
-    recognition.onresult = (event: ISpeechRecognitionEvent) => {
-      const result = event.results[event.results.length - 1];
-      const text = result[0].transcript;
-      setTranscript(text);
-      if (result.isFinal) { recognition.stop(); sendMessage(text); }
-    };
-    recognition.onerror = () => { setIsRecording(false); setTranscript(""); };
-    recognition.onend = () => { setIsRecording(false); };
-    recognition.start();
-    setIsRecording(true);
-  }, [stopTTS, sendMessage]);
-
-  function stopRecording() { recognitionRef.current?.stop(); setIsRecording(false); }
-
-  function handleMicPress() {
-    unlockAudio();
-    if (!conversationStarted) { setConversationStarted(true); startRecording(); return; }
-    if (isPlaying) { stopTTS(); return; }
-    if (isRecording) { stopRecording(); return; }
-    startRecording();
-  }
-
-  async function endSession() {
-    if (messages.length === 0) { toast.info("אין הודעות בשיחה"); return; }
-    setConversationStarted(false);
-    stopRecording();
+  const handleConversationEnd = useCallback(async (conversationId: string) => {
     setLoadingFeedback(true);
     stopTTS();
     try {
-      const res = await fetch("/api/ai/feedback", {
+      const res = await fetch("/api/ai/convai-feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages, scenarioId: scenario.id, sessionId, userId }),
+        body: JSON.stringify({ conversationId, scenarioId: scenario.id, sessionType: "scenario" }),
       });
       if (!res.ok) throw new Error("שגיאה ביצירת פידבק");
       const data = await res.json();
@@ -176,8 +45,35 @@ export function VoiceChat({ scenario, userId }: Props) {
     } finally {
       setLoadingFeedback(false);
     }
+  }, [scenario.id, stopTTS, playTTS]);
+
+  const { orbState, transcript, endSession } = useConvai({
+    signedUrl,
+    systemPrompt,
+    onEnd: handleConversationEnd,
+  });
+
+  async function startChat() {
+    setStarting(true);
+    try {
+      const res = await fetch("/api/ai/convai-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scenarioId: scenario.id, sessionType: "scenario" }),
+      });
+      if (!res.ok) throw new Error("שגיאה בהתחברות");
+      const data = await res.json();
+      setSystemPrompt(data.systemPrompt);
+      setSignedUrl(data.signedUrl);
+      setPhase("chat");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "שגיאה");
+    } finally {
+      setStarting(false);
+    }
   }
 
+  const hints = (scenario.hints as string[] | null) ?? [];
   const difficultyColors: Record<string, string> = {
     easy: "bg-green-100 text-green-700",
     medium: "bg-yellow-100 text-yellow-700",
@@ -224,9 +120,7 @@ export function VoiceChat({ scenario, userId }: Props) {
               <Card className="rounded-2xl">
                 <CardContent className="p-4 space-y-2">
                   {hints.map((hint, i) => (
-                    <p key={i} className="text-sm text-muted-foreground">
-                      {i + 1}. {hint}
-                    </p>
+                    <p key={i} className="text-sm text-muted-foreground">{i + 1}. {hint}</p>
                   ))}
                 </CardContent>
               </Card>
@@ -234,15 +128,8 @@ export function VoiceChat({ scenario, userId }: Props) {
           </div>
         )}
 
-        <Button
-          className="w-full h-12 rounded-xl font-bold text-base gap-2"
-          onClick={() => {
-            setPhase("chat");
-            setConversationStarted(true);
-          }}
-        >
-          <Mic className="size-5" />
-          התחל תרחיש
+        <Button className="w-full h-12 rounded-xl font-bold text-base" onClick={startChat} disabled={starting}>
+          {starting ? "מתחבר..." : "התחל תרחיש"}
         </Button>
       </div>
     );
@@ -252,19 +139,14 @@ export function VoiceChat({ scenario, userId }: Props) {
   if (phase === "feedback") {
     return (
       <div className="p-5 max-w-lg mx-auto space-y-5">
-        <div
-          className="flex flex-col items-center pt-6 pb-2"
-          style={{ animation: "celebrate 0.5s ease-out both" }}
-        >
+        <div className="flex flex-col items-center pt-6 pb-2" style={{ animation: "celebrate 0.5s ease-out both" }}>
           <div className="w-16 h-16 rounded-full bg-[oklch(60%_0.22_145)] flex items-center justify-center mb-4">
             <span className="text-3xl text-white">✓</span>
           </div>
           <h1 className="text-xl font-black">פידבק – {scenario.name}</h1>
         </div>
         <Card className="rounded-2xl shadow-[var(--shadow-card)]">
-          <CardContent className="p-5 text-sm leading-relaxed whitespace-pre-wrap">
-            {feedback}
-          </CardContent>
+          <CardContent className="p-5 text-sm leading-relaxed whitespace-pre-wrap">{feedback}</CardContent>
         </Card>
         <Button
           variant="outline"
@@ -279,37 +161,25 @@ export function VoiceChat({ scenario, userId }: Props) {
           )}
         </Button>
         <Link href="/ai-practice">
-          <Button variant="outline" className="w-full rounded-xl">
-            תרחיש חדש
-          </Button>
+          <Button variant="outline" className="w-full rounded-xl">תרחיש חדש</Button>
         </Link>
       </div>
     );
   }
 
-  // ── Chat (fullscreen orb) ────────────────────────────────────────────────────
-  const orbState: OrbState =
-    (loadingAI || loadingFeedback) && !isPlaying
-      ? "loading"
-      : isRecording
-      ? "listening"
-      : isPlaying
-      ? "speaking"
-      : "idle";
-
-  const stateLabel = !conversationStarted
-    ? "לחץ להתחלת שיחה"
-    : isRecording
+  // ── Chat ────────────────────────────────────────────────────────────────────
+  const stateLabel = loadingFeedback
+    ? "מכין פידבק..."
+    : orbState === "loading"
+    ? "מתחבר..."
+    : orbState === "listening"
     ? "מקשיב..."
-    : isPlaying
+    : orbState === "speaking"
     ? "ה-AI מדבר..."
-    : loadingAI
-    ? "מעבד..."
-    : "לחץ לדבר";
+    : "ממתין";
 
   return (
     <div className="fixed inset-0 bg-[#0A0A0A] flex flex-col overflow-hidden">
-      {/* Minimal header */}
       <div className="flex items-center gap-3 px-4 pt-12 pb-4">
         <Link href="/ai-practice" className="text-white/60 hover:text-white/90">
           <ArrowRight className="size-5" />
@@ -317,30 +187,20 @@ export function VoiceChat({ scenario, userId }: Props) {
         <span className="text-white/70 text-sm font-medium">{scenario.name}</span>
       </div>
 
-      {/* Center */}
       <div className="flex-1 flex flex-col items-center justify-center gap-8 px-6">
         {transcript && (
-          <p
-            className="text-white/60 text-sm text-center max-w-xs"
-            dir="rtl"
-            lang="ar"
-            style={{ fontFamily: "var(--font-noto-arabic)" }}
-          >
+          <p className="text-white/60 text-sm text-center max-w-xs" dir="rtl" lang="ar" style={{ fontFamily: "var(--font-noto-arabic)" }}>
             {transcript}
           </p>
         )}
 
-        <VoiceOrb
-          state={orbState}
-          onClick={handleMicPress}
-          disabled={false}
-        />
+        <VoiceOrb state={orbState} onClick={() => {}} disabled={false} />
 
         <div className="flex flex-col items-center gap-4">
           <p className="text-white text-lg font-semibold text-center">{stateLabel}</p>
           <button
             onClick={endSession}
-            disabled={messages.length === 0 || loadingAI || loadingFeedback}
+            disabled={loadingFeedback}
             className="text-white/50 text-sm underline underline-offset-2 disabled:opacity-20 transition-opacity"
           >
             {loadingFeedback ? "מכין פידבק..." : "סיים וקבל פידבק"}

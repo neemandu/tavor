@@ -104,13 +104,16 @@ export async function POST(request: NextRequest) {
 
     // Award 5 streak bonus points if streak is active (and not already recorded today)
     const wasAlreadyToday = streakData?.last_activity_date === today;
-    if (!wasAlreadyToday && newStreak > 0) {
-      await adminSupabase.from("user_points").insert({
+    if (!wasAlreadyToday && newStreak > 1) {
+      const { error: bonusError } = await adminSupabase.from("user_points").insert({
         user_id: user.id,
         points: 5,
-        reason: "streak_bonus",
+        reason: "daily_streak",
         metadata: { streak: newStreak, date: today },
       });
+      if (bonusError) {
+        console.error("streak bonus insert error:", bonusError);
+      }
     }
   } catch (streakErr) {
     console.error("streak update error:", streakErr);
