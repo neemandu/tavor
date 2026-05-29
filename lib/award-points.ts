@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import { evaluateAndGrantAchievements } from "@/lib/achievements-server";
 
 type PointsReason =
   | "scenario_complete"
@@ -70,4 +71,8 @@ export async function awardPoints(
       console.error("awardPoints daily_streak bonus failed:", bonusError);
     }
   }
+
+  // Evaluate + grant achievements based on the user's updated stats.
+  // Self-contained and non-throwing — never fails the parent award.
+  await evaluateAndGrantAchievements(userId);
 }

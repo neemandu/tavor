@@ -3,6 +3,8 @@ export const dynamic = "force-dynamic";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { StudentShell } from "@/components/student-shell";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { levelProgress } from "@/lib/levels";
 import Link from "next/link";
 import { BookOpen, Search, FileText, Trophy, Mic } from "lucide-react";
 
@@ -131,21 +133,27 @@ export default async function StudentHome() {
                   </>
                 )}
               </div>
-              {myEntry && (
-                <div className="mt-4">
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full transition-all"
-                      style={{
-                        width: `${Math.min(100, (myEntry.total_points % 100))}%`,
-                      }}
-                    />
+              {(() => {
+                const prog = levelProgress(myEntry.total_points);
+                return (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <Badge variant="secondary" className="font-bold">
+                        רמה {prog.level}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        עוד {prog.xpToNext.toLocaleString("he-IL")} נקודות לרמה {prog.level + 1}
+                      </span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary rounded-full transition-all"
+                        style={{ width: `${prog.progressPct}%` }}
+                      />
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    עוד {100 - (myEntry.total_points % 100)} נקודות לרמה הבאה
-                  </p>
-                </div>
-              )}
+                );
+              })()}
             </CardContent>
           </Card>
         )}

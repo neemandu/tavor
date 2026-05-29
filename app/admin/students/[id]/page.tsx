@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { AdminShell } from "@/components/admin-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { levelFromXp } from "@/lib/levels";
 import Link from "next/link";
 import { ArrowRight, User } from "lucide-react";
 import { notFound } from "next/navigation";
@@ -134,12 +135,17 @@ export default async function StudentProfilePage({
           </CardContent>
         </Card>
 
-        {/* Total points */}
+        {/* Total points + level */}
         <Card>
-          <CardContent className="p-4 flex items-center gap-3">
+          <CardContent className="p-4 flex items-center gap-6">
             <div>
               <p className="text-sm text-muted-foreground">סה״כ נקודות</p>
               <p className="text-3xl font-bold">{totalPoints.toLocaleString("he-IL")}</p>
+            </div>
+            <div className="w-px h-12 bg-border" />
+            <div>
+              <p className="text-sm text-muted-foreground">רמה</p>
+              <p className="text-3xl font-bold">{levelFromXp(totalPoints)}</p>
             </div>
           </CardContent>
         </Card>

@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Home, BookOpen, Mic, Trophy, Grid2x2, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 type NavItem = {
@@ -25,6 +27,20 @@ const navItems: NavItem[] = [
 export function StudentShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [level, setLevel] = useState<number | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/me/stats")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (active && d && typeof d.level === "number") setLevel(d.level);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [pathname]);
 
   async function handleSignOut() {
     const { createClient } = await import("@/lib/supabase/client");
@@ -38,7 +54,14 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
       {/* Top header */}
       <header className="fixed top-0 inset-x-0 z-50 h-14 flex items-center justify-between px-5 bg-background border-b border-border">
         <ThemeToggle />
-        <span className="text-sm font-semibold tracking-wide">תבור</span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold tracking-wide">תבור</span>
+          {level !== null && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-bold">
+              רמה {level}
+            </Badge>
+          )}
+        </div>
         <button
           onClick={handleSignOut}
           className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
