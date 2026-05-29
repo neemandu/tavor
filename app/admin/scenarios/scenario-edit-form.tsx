@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DIFFICULTY_LABELS,
-  SCENARIO_CATEGORY_LABELS,
   type Scenario,
+  type ScenarioDifficulty,
 } from "@/types";
 import { toast } from "sonner";
 import { Plus, Trash2, GripVertical } from "lucide-react";
@@ -25,10 +25,11 @@ export function ScenarioEditForm({ scenario, onClose }: Props) {
   const [name, setName] = useState(scenario.name);
   const [description, setDescription] = useState(scenario.student_description ?? "");
   const [role, setRole] = useState(scenario.student_role ?? "");
-  const [aiInstructions, setAiInstructions] = useState(scenario.ai_instructions ?? "");
-  const [voiceInstructions, setVoiceInstructions] = useState(scenario.voice_instructions ?? "");
+  // Fall back to voice_instructions if ai_instructions is empty (migration of old data)
+  const [aiInstructions, setAiInstructions] = useState(
+    scenario.ai_instructions ?? scenario.voice_instructions ?? ""
+  );
   const [difficulty, setDifficulty] = useState(scenario.difficulty ?? "");
-  const [category, setCategory] = useState(scenario.category ?? "");
   const [hints, setHints] = useState<string[]>(scenario.hints ?? [""]);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -59,10 +60,10 @@ export function ScenarioEditForm({ scenario, onClose }: Props) {
           student_description: description || null,
           student_role: role || null,
           ai_instructions: aiInstructions || null,
-          voice_instructions: voiceInstructions || null,
+          voice_instructions: null,
           hints: filteredHints.length > 0 ? filteredHints : null,
           difficulty: difficulty || null,
-          category: category || null,
+          category: null,
         }),
       });
       if (!res.ok) throw new Error("שגיאה בעדכון");
@@ -104,20 +105,13 @@ export function ScenarioEditForm({ scenario, onClose }: Props) {
             <div className="space-y-1.5">
               <Label>רמת קושי</Label>
               <Select value={difficulty} onValueChange={(v) => setDifficulty(v ?? "")}>
-                <SelectTrigger><SelectValue placeholder="בחר..." /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="בחר...">
+                    {difficulty ? DIFFICULTY_LABELS[difficulty as ScenarioDifficulty] : undefined}
+                  </SelectValue>
+                </SelectTrigger>
                 <SelectContent>
                   {Object.entries(DIFFICULTY_LABELS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>קטגוריה</Label>
-              <Select value={category} onValueChange={(v) => setCategory(v ?? "")}>
-                <SelectTrigger><SelectValue placeholder="בחר..." /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(SCENARIO_CATEGORY_LABELS).map(([k, v]) => (
                     <SelectItem key={k} value={k}>{v}</SelectItem>
                   ))}
                 </SelectContent>
@@ -136,25 +130,12 @@ export function ScenarioEditForm({ scenario, onClose }: Props) {
           </div>
 
           <div className="space-y-1.5">
-            <Label>הנחיות ל-AI (תפקיד ותוכן)</Label>
+            <Label>הנחיות ל-AI</Label>
             <Textarea
               value={aiInstructions}
               onChange={(e) => setAiInstructions(e.target.value)}
-              placeholder="תפקיד ה-AI, איך להתנהג, מה לאמר, רקע הדמות..."
-              rows={4}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="flex items-center gap-1.5">
-              הנחיות לסוכן הקולי
-              <span className="text-xs font-normal text-muted-foreground">(קצב, ניב, תגובה לקשיים)</span>
-            </Label>
-            <Textarea
-              value={voiceInstructions}
-              onChange={(e) => setVoiceInstructions(e.target.value)}
-              placeholder={`לדוגמה:\n- דבר בקצב איטי וברור\n- השתמש בניב פלסטיני`}
-              rows={4}
+              placeholder={`תפקיד ה-AI, איך להתנהג, מה לאמר, רקע הדמות...\n\nלדוגמה:\n- דבר בקצב איטי וברור\n- השתמש בניב פלסטיני\n- אם החניך לא מבין, חזור על המשפט באיטיות ואל תעבור לעברית`}
+              rows={6}
             />
           </div>
 

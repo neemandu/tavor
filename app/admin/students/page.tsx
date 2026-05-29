@@ -10,18 +10,19 @@ import Link from "next/link";
 export default async function AdminStudentsPage() {
   const supabase = await createClient();
 
-  const { data: studentsData } = await supabase
-    .from("users")
-    .select("id, name, created_at, user_course_access(courses(name))")
-    .eq("role", "student")
-    .order("name");
+  const [{ data: studentsData }, { data: coursesData }] = await Promise.all([
+    supabase
+      .from("users")
+      .select("id, name, created_at, user_course_access(courses(name))")
+      .eq("role", "student")
+      .order("name"),
+    supabase
+      .from("courses")
+      .select("id, name")
+      .eq("is_active", true)
+      .order("name"),
+  ]);
   const students = studentsData ?? [];
-
-  const { data: coursesData } = await supabase
-    .from("courses")
-    .select("id, name")
-    .eq("is_active", true)
-    .order("name");
   const courses = (coursesData ?? []) as { id: string; name: string }[];
 
   return (

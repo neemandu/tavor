@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddWordForm } from "./add-word-form";
 import { ExcelImportButton } from "./excel-import";
@@ -24,11 +24,26 @@ export default async function AdminVocabularyPage() {
     .eq("is_active", true);
   const courses = (coursesData ?? []) as { id: string; name: string }[];
 
+  const adminSupabase = createAdminClient();
+  const { data: handbooksData } = await adminSupabase
+    .from("handbooks")
+    .select("course_id, file_path, file_name");
+
+  const handbooks: { courseId: string; fileName: string; signedUrl: string }[] = [];
+  for (const h of handbooksData ?? []) {
+    const { data } = await adminSupabase.storage
+      .from("handbooks")
+      .createSignedUrl(h.file_path, 60 * 60);
+    if (data?.signedUrl) {
+      handbooks.push({ courseId: h.course_id, fileName: h.file_name, signedUrl: data.signedUrl });
+    }
+  }
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">ניהול תוכן</h1>
 
-      <HandbookUpload courses={courses} />
+      <HandbookUpload courses={courses} handbooks={handbooks} />
 
       <Card>
         <CardHeader className="pb-3">

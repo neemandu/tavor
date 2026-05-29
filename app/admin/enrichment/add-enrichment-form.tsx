@@ -113,7 +113,9 @@ export function AddEnrichmentForm() {
               <Label>קטגוריה</Label>
               <Select value={category} onValueChange={(v) => setCategory(v ?? "")}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="בחר קטגוריה" />
+                  <SelectValue placeholder="בחר קטגוריה">
+                    {category ? ({ culture: "תרבות", geography: "גיאוגרפיה", religion: "דת", levantine: "לבנטיני", other: "אחר" } as Record<string, string>)[category] : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="culture">תרבות</SelectItem>

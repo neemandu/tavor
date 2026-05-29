@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Home, BookOpen, Mic, Trophy, Grid2x2 } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Home, BookOpen, Mic, Trophy, Grid2x2, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -24,6 +24,14 @@ const navItems: NavItem[] = [
 
 export function StudentShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleSignOut() {
+    const { createClient } = await import("@/lib/supabase/client");
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -31,6 +39,13 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
       <header className="fixed top-0 inset-x-0 z-50 h-14 flex items-center justify-between px-5 bg-background border-b border-border">
         <ThemeToggle />
         <span className="text-sm font-semibold tracking-wide">תבור</span>
+        <button
+          onClick={handleSignOut}
+          className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="יציאה"
+        >
+          <LogOut className="size-4" />
+        </button>
       </header>
 
       <main className="flex-1 overflow-y-auto pt-14 pb-[calc(4.5rem+env(safe-area-inset-bottom))]">

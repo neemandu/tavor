@@ -93,35 +93,33 @@ export default async function AIPracticePage() {
           <p className="text-sm text-muted-foreground">בחר מצב תרגול</p>
         </div>
 
-        {/* Mode cards */}
-        <div className="space-y-3">
-          {MODES.map((mode) => {
-            const Icon = mode.icon;
-            const card = (
-              <Card
-                className={`rounded-2xl border-s-4 ${mode.accentColor} shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elevated)] transition-shadow cursor-pointer`}
-              >
-                <CardContent className="p-5 flex items-center gap-4">
-                  <Icon className="size-10 text-muted-foreground shrink-0" strokeWidth={1.5} />
-                  <div className="flex-1 space-y-0.5">
-                    <p className="text-lg font-bold leading-tight">{mode.title}</p>
-                    <p className="text-sm text-muted-foreground">{mode.description}</p>
-                  </div>
-                  <ChevronLeft className="size-5 text-muted-foreground shrink-0" />
-                </CardContent>
-              </Card>
-            );
+        {/* Mode cards — each is a direct child of the outer space-y-5 so gaps are uniform */}
+        {MODES.map((mode) => {
+          const Icon = mode.icon;
+          const card = (
+            <Card
+              className={`rounded-2xl border-s-4 ${mode.accentColor} shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elevated)] transition-shadow cursor-pointer`}
+            >
+              <CardContent className="p-5 flex items-center gap-4">
+                <Icon className="size-10 text-muted-foreground shrink-0" strokeWidth={1.5} />
+                <div className="flex-1 space-y-0.5">
+                  <p className="text-lg font-bold leading-tight">{mode.title}</p>
+                  <p className="text-sm text-muted-foreground">{mode.description}</p>
+                </div>
+                <ChevronLeft className="size-5 text-muted-foreground shrink-0" />
+              </CardContent>
+            </Card>
+          );
 
-            if (mode.href) {
-              return (
-                <Link key={mode.title} href={mode.href}>
-                  {card}
-                </Link>
-              );
-            }
-            return <div key={mode.title}>{card}</div>;
-          })}
-        </div>
+          if (mode.href) {
+            return (
+              <Link key={mode.title} href={mode.href}>
+                {card}
+              </Link>
+            );
+          }
+          return <div key={mode.title}>{card}</div>;
+        })}
 
         {/* Scenarios list */}
         <div>

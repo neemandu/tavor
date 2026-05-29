@@ -6,10 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DIFFICULTY_LABELS,
-  SCENARIO_CATEGORY_LABELS,
   type Scenario,
   type ScenarioDifficulty,
-  type ScenarioCategory,
 } from "@/types";
 import { Pencil, CheckCircle2, XCircle, Trash2 } from "lucide-react";
 import { ScenarioToggle } from "./scenario-toggle";
@@ -67,11 +65,6 @@ export function ScenariosList({ scenarios }: Props) {
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  {scenario.category && (
-                    <Badge variant="secondary" className="text-xs">
-                      {SCENARIO_CATEGORY_LABELS[scenario.category as ScenarioCategory]}
-                    </Badge>
-                  )}
                   {scenario.difficulty && (
                     <Badge variant="outline" className="text-xs">
                       {DIFFICULTY_LABELS[scenario.difficulty as ScenarioDifficulty]}

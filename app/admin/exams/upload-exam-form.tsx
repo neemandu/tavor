@@ -74,7 +74,11 @@ export function UploadExamForm({ courses }: { courses: Course[] }) {
           <div className="space-y-1.5">
             <Label>קורס</Label>
             <Select value={courseId} onValueChange={(v) => setCourseId(v ?? "")}>
-              <SelectTrigger><SelectValue placeholder="כל הקורסים" /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue placeholder="כל הקורסים">
+                  {courseId ? courses.find((c) => c.id === courseId)?.name : undefined}
+                </SelectValue>
+              </SelectTrigger>
               <SelectContent>
                 {courses.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>

@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DIFFICULTY_LABELS, SCENARIO_CATEGORY_LABELS } from "@/types";
+import { DIFFICULTY_LABELS, type ScenarioDifficulty } from "@/types";
 import { toast } from "sonner";
 import { Plus, Trash2, GripVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -17,9 +17,7 @@ export function ScenarioForm() {
   const [description, setDescription] = useState("");
   const [role, setRole] = useState("");
   const [aiInstructions, setAiInstructions] = useState("");
-  const [voiceInstructions, setVoiceInstructions] = useState("");
   const [difficulty, setDifficulty] = useState("");
-  const [category, setCategory] = useState("");
   const [hints, setHints] = useState<string[]>([""]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -51,16 +49,16 @@ export function ScenarioForm() {
           student_description: description || null,
           student_role: role || null,
           ai_instructions: aiInstructions || null,
-          voice_instructions: voiceInstructions || null,
+          voice_instructions: null,
           hints: filteredHints.length > 0 ? filteredHints : null,
           difficulty: difficulty || null,
-          category: category || null,
+          category: null,
         }),
       });
       if (!res.ok) throw new Error(await res.text());
       toast.success("תרחיש נוצר בהצלחה");
       setName(""); setDescription(""); setRole(""); setAiInstructions("");
-      setVoiceInstructions(""); setDifficulty(""); setCategory(""); setHints([""]);
+      setDifficulty(""); setHints([""]);
       setOpen(false);
       router.refresh();
     } catch {
@@ -98,20 +96,13 @@ export function ScenarioForm() {
             <div className="space-y-1.5">
               <Label>רמת קושי</Label>
               <Select value={difficulty} onValueChange={(v) => setDifficulty(v ?? "")}>
-                <SelectTrigger><SelectValue placeholder="בחר..." /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="בחר...">
+                    {difficulty ? DIFFICULTY_LABELS[difficulty as ScenarioDifficulty] : undefined}
+                  </SelectValue>
+                </SelectTrigger>
                 <SelectContent>
                   {Object.entries(DIFFICULTY_LABELS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>קטגוריה</Label>
-              <Select value={category} onValueChange={(v) => setCategory(v ?? "")}>
-                <SelectTrigger><SelectValue placeholder="בחר..." /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(SCENARIO_CATEGORY_LABELS).map(([k, v]) => (
                     <SelectItem key={k} value={k}>{v}</SelectItem>
                   ))}
                 </SelectContent>
@@ -130,25 +121,12 @@ export function ScenarioForm() {
           </div>
 
           <div className="space-y-1.5">
-            <Label>הנחיות ל-AI (תפקיד ותוכן)</Label>
+            <Label>הנחיות ל-AI</Label>
             <Textarea
               value={aiInstructions}
               onChange={(e) => setAiInstructions(e.target.value)}
-              placeholder="תפקיד ה-AI, איך להתנהג, מה לאמר, רקע הדמות..."
-              rows={4}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="flex items-center gap-1.5">
-              הנחיות לסוכן הקולי
-              <span className="text-xs font-normal text-muted-foreground">(קצב, ניב, תגובה לקשיים)</span>
-            </Label>
-            <Textarea
-              value={voiceInstructions}
-              onChange={(e) => setVoiceInstructions(e.target.value)}
-              placeholder={`לדוגמה:\n- דבר בקצב איטי וברור\n- השתמש בניב פלסטיני\n- אם החניך לא מבין, חזור על המשפט באיטיות ואל תעבור לעברית\n- הראה חוסר סבלנות מתון בהתאם לדמות`}
-              rows={4}
+              placeholder={`תפקיד ה-AI, איך להתנהג, מה לאמר, רקע הדמות...\n\nלדוגמה:\n- דבר בקצב איטי וברור\n- השתמש בניב פלסטיני\n- אם החניך לא מבין, חזור על המשפט באיטיות ואל תעבור לעברית`}
+              rows={6}
             />
           </div>
 

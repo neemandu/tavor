@@ -1,12 +1,12 @@
 export const dynamic = "force-dynamic";
 
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { StudentShell } from "@/components/student-shell";
 import { Button } from "@/components/ui/button";
 import { Download, BookOpen } from "lucide-react";
 
 export default async function HandbookPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Fetch the most recent handbook (any course – for now we take the latest)
   const { data: handbook } = await supabase

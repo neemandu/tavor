@@ -64,7 +64,9 @@ export function CourseForm() {
             <Label>סוג</Label>
             <Select value={type} onValueChange={(v) => setType(v ?? "")}>
               <SelectTrigger>
-                <SelectValue placeholder="בחר סוג" />
+                <SelectValue placeholder="בחר סוג">
+                  {type ? ({ year: "שנתי", "8_weeks": "8 שבועות", "5_weeks": "5 שבועות" } as Record<string, string>)[type] : undefined}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="year">שנתי</SelectItem>

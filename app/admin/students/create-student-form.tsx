@@ -97,7 +97,9 @@ export function CreateStudentForm({ courses }: { courses: Course[] }) {
             <Label>קורס</Label>
             <Select value={courseId} onValueChange={(v) => setCourseId(v ?? "")}>
               <SelectTrigger>
-                <SelectValue placeholder="בחר קורס (אופציונלי)" />
+                <SelectValue placeholder="בחר קורס (אופציונלי)">
+                  {courseId ? courses.find((c) => c.id === courseId)?.name : undefined}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {courses.map((c) => (

@@ -116,7 +116,9 @@ export function EditWordForm({ word, onClose }: Props) {
           <Label className="text-xs">קטגוריה</Label>
           <Select value={category} onValueChange={(v) => setCategory((v ?? "") as VocabularyCategory)}>
             <SelectTrigger>
-              <SelectValue placeholder="בחר..." />
+              <SelectValue placeholder="בחר...">
+                {category ? CATEGORY_LABELS[category as VocabularyCategory] : undefined}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
