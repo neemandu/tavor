@@ -1,10 +1,10 @@
 export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { StudentShell } from "@/components/student-shell";
-import { ARABIC_LETTERS } from "@/lib/arabic-letters";
-import { LetterPractice } from "./letter-practice";
+import { LETTER_BY_ID } from "@/lib/letter-exercises";
+import { loadLetterStats } from "@/lib/letter-stats";
+import { LetterPracticeSession } from "../practice/letter-practice-session";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -12,31 +12,13 @@ interface PageProps {
 
 export default async function LetterPage({ params }: PageProps) {
   const { id } = await params;
+  if (!LETTER_BY_ID[id]) notFound();
 
-  const letter = ARABIC_LETTERS.find((l) => l.id === id);
-  if (!letter) notFound();
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  let alreadyMastered = false;
-
-  if (user) {
-    const { data } = await supabase
-      .from("letter_progress")
-      .select("letter")
-      .eq("user_id", user.id)
-      .eq("letter", id)
-      .maybeSingle();
-
-    alreadyMastered = data !== null;
-  }
+  const stats = await loadLetterStats();
 
   return (
     <StudentShell>
-      <LetterPractice letter={letter} alreadyMastered={alreadyMastered} />
+      <LetterPracticeSession mode="focused" letterId={id} initialStats={stats} />
     </StudentShell>
   );
 }

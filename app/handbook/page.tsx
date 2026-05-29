@@ -40,8 +40,7 @@ export default async function HandbookPage() {
           </div>
         ) : pdfUrl ? (
           <>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">{handbook.file_name}</span>
+            <div className="flex items-center justify-end">
               <a href={pdfUrl} download={handbook.file_name} target="_blank" rel="noreferrer">
                 <Button variant="default" size="sm" className="gap-2">
                   <Download className="size-4" />

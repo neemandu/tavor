@@ -1,7 +1,10 @@
 export const dynamic = "force-dynamic";
 
+import Link from "next/link";
+import { GraduationCap } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { StudentShell } from "@/components/student-shell";
+import { Button } from "@/components/ui/button";
 import { ARABIC_LETTERS } from "@/lib/arabic-letters";
 import { LettersGrid } from "./letters-grid";
 
@@ -33,9 +36,17 @@ export default async function LettersPage() {
         <div className="pt-2">
           <h1 className="text-xl font-bold">לימוד אותיות ערבית</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            לחץ על אות כדי לתרגל כתיבה
+            תרגל זיהוי אותיות וקריאה מחוברת
           </p>
         </div>
+
+        {/* Practice CTA */}
+        <Link href="/letters/practice">
+          <Button className="w-full gap-2" size="lg">
+            <GraduationCap className="size-5" />
+            תרגול זיהוי
+          </Button>
+        </Link>
 
         {/* Progress */}
         <div className="space-y-1.5">
