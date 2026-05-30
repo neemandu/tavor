@@ -24,23 +24,47 @@ const navItems: NavItem[] = [
   { href: "/more", label: "עוד", icon: Grid2x2 },
 ];
 
+// Module-level cache: the level badge only changes when XP changes, so fetch
+// /api/me/stats once per page load and reuse it across client navigations.
+// A shared in-flight promise also collapses React Strict Mode's double-invoke.
+let cachedLevel: number | null = null;
+let statsInFlight: Promise<void> | null = null;
+
+/** Call after an action that changes XP (e.g. finishing practice) to refresh. */
+export function invalidateLevelCache() {
+  cachedLevel = null;
+  statsInFlight = null;
+}
+
 export function StudentShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [level, setLevel] = useState<number | null>(null);
+  const [level, setLevel] = useState<number | null>(cachedLevel);
 
   useEffect(() => {
+    if (cachedLevel !== null) {
+      setLevel(cachedLevel);
+      return;
+    }
+    if (!statsInFlight) {
+      statsInFlight = fetch("/api/me/stats")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (d && typeof d.level === "number") cachedLevel = d.level;
+        })
+        .catch(() => {})
+        .finally(() => {
+          statsInFlight = null;
+        });
+    }
     let active = true;
-    fetch("/api/me/stats")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (active && d && typeof d.level === "number") setLevel(d.level);
-      })
-      .catch(() => {});
+    statsInFlight.then(() => {
+      if (active && cachedLevel !== null) setLevel(cachedLevel);
+    });
     return () => {
       active = false;
     };
-  }, [pathname]);
+  }, []);
 
   async function handleSignOut() {
     const { createClient } = await import("@/lib/supabase/client");

@@ -17,6 +17,7 @@ import {
 } from "@/lib/letter-exercises";
 import type { ArabicLetter } from "@/lib/arabic-letters";
 import { MeetLetterCard } from "./meet-letter-card";
+import { invalidateLevelCache } from "@/components/student-shell";
 
 type Delta = { correct: number; attempts: number };
 const MAX_RESURFACE = 6;
@@ -100,7 +101,10 @@ export function LetterPracticeSession({
       });
       if (res.ok) {
         const data = await res.json();
-        setNewlyMastered((data.newlyMastered as string[]) ?? []);
+        const mastered = (data.newlyMastered as string[]) ?? [];
+        setNewlyMastered(mastered);
+        // New letters mastered → XP changed, so refresh the header level badge.
+        if (mastered.length > 0) invalidateLevelCache();
       } else {
         toast.error("שמירת ההתקדמות נכשלה");
       }
