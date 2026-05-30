@@ -17,6 +17,9 @@ export const LETTER_BY_ID: Record<string, ArabicLetter> = Object.fromEntries(
 );
 
 const ALL_IDS = ARABIC_LETTERS.map((l) => l.id);
+// Letters that join to the following letter. A cluster only renders as one
+// connected shape if every letter EXCEPT the last is connecting.
+const CONNECTING_IDS = ARABIC_LETTERS.filter((l) => l.connects).map((l) => l.id);
 
 export type FormKey = "initial" | "medial" | "final";
 
@@ -108,11 +111,31 @@ export function makeClusterQuestion(
   const minLen = opts.minLen ?? 2;
   const maxLen = opts.maxLen ?? 3;
   const len = minLen + Math.floor(rng() * (maxLen - minLen + 1));
+  const must = opts.mustInclude;
 
-  const source = pool.length >= len ? pool : ALL_IDS;
-  const ids = sampleN(source, len, rng);
-  if (opts.mustInclude && !ids.includes(opts.mustInclude)) {
-    ids[Math.floor(rng() * ids.length)] = opts.mustInclude;
+  // Non-final positions MUST connect to the next letter, so the cluster renders
+  // fully joined (letters morph into initial/medial forms — the actual skill).
+  const connectingPool = pool.filter((id) => LETTER_BY_ID[id]?.connects);
+  const connectingSource = connectingPool.length >= len - 1 ? connectingPool : CONNECTING_IDS;
+  const nonFinal = sampleN(connectingSource, len - 1, rng);
+
+  // The last letter can be anything — it still joins from the right.
+  const finalCandidates = (pool.length ? pool : ALL_IDS).filter((id) => !nonFinal.includes(id));
+  const finalLetter = pickOne(
+    finalCandidates.length ? finalCandidates : ALL_IDS.filter((id) => !nonFinal.includes(id)),
+    rng
+  );
+
+  const ids = [...nonFinal, finalLetter];
+
+  // Place the credited target where it's valid: connecting letters anywhere,
+  // non-connecting only as the final letter (else it would break the join).
+  if (must && !ids.includes(must)) {
+    if (LETTER_BY_ID[must].connects) {
+      ids[Math.floor(rng() * len)] = must;
+    } else {
+      ids[len - 1] = must;
+    }
   }
 
   const cluster = ids.map((id) => LETTER_BY_ID[id].arabic).join("");
