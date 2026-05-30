@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { StudentShell } from "@/components/student-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
-import { BookOpen, Globe, Trophy, Award, Shield } from "lucide-react";
+import { BookOpen, Languages, Trophy, Award, Shield } from "lucide-react";
 
 const items = [
   {
@@ -14,11 +14,11 @@ const items = [
     color: "bg-blue-100 text-blue-600",
   },
   {
-    href: "/enrichment",
-    icon: Globe,
-    title: "תכני העשרה",
-    description: "סרטונים, מאמרים ותרבות ערבית",
-    color: "bg-green-100 text-green-600",
+    href: "/letters",
+    icon: Languages,
+    title: "לימוד אותיות",
+    description: "זיהוי וקריאת האלפבית הערבי",
+    color: "bg-purple-100 text-purple-600",
   },
   {
     href: "/achievements",
