@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { levelProgress } from "@/lib/levels";
 import Link from "next/link";
-import { BookOpen, Search, FileText, Globe, Mic } from "lucide-react";
+import { BookOpen, Search, FileText, Languages, Mic } from "lucide-react";
 
 type LeaderboardRow = {
   user_id: string;
@@ -41,11 +41,11 @@ const QUICK_ACTIONS = [
     textColor: "text-white",
   },
   {
-    href: "/enrichment",
-    label: "תכני העשרה",
-    sublabel: "תרבות וסרטונים",
-    icon: Globe,
-    bg: "from-emerald-500 to-emerald-600",
+    href: "/letters",
+    label: "לימוד אותיות",
+    sublabel: "זיהוי וקריאה",
+    icon: Languages,
+    bg: "from-purple-500 to-purple-600",
     textColor: "text-white",
   },
 ] as const;
