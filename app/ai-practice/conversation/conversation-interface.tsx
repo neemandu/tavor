@@ -44,7 +44,6 @@ export function ConversationInterface({ userId: _userId }: Props) {
       if (!data.feedback) { toast.error("לא הייתה שיחה לנתח"); setPhase("chat"); return; }
       setFeedback(data.feedback);
       setPhase("feedback");
-      setTimeout(() => playTTS(data.feedback, "he"), 400);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "שגיאה");
     } finally {

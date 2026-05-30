@@ -40,7 +40,6 @@ export function VoiceChat({ scenario, userId: _userId }: Props) {
       if (!data.feedback) { toast.error("לא הייתה שיחה לנתח"); setPhase("briefing"); return; }
       setFeedback(data.feedback);
       setPhase("feedback");
-      setTimeout(() => playTTS(data.feedback, "he"), 500);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "שגיאה");
     } finally {
