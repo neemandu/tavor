@@ -357,6 +357,18 @@ function ClusterCard({
           ))}
         </div>
 
+        {done && progress.includes("wrong") && (
+          <div className="text-center space-y-1 rounded-xl border border-green-300 bg-green-50 dark:bg-green-950/20 p-3">
+            <p className="text-xs font-semibold text-green-700 dark:text-green-400">הקריאה הנכונה:</p>
+            <p dir="rtl" lang="ar" style={arabicStyle} className="text-3xl leading-none">
+              {q.sequence.map((id) => LETTER_BY_ID[id].arabic).join("  ")}
+            </p>
+            <p dir="rtl" className="text-xs text-muted-foreground">
+              {q.sequence.map((id) => LETTER_BY_ID[id].nameHe).join(" · ")}
+            </p>
+          </div>
+        )}
+
         {done && (
           <Button className="w-full" onClick={onNext}>
             המשך
