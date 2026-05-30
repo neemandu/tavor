@@ -11,6 +11,7 @@ import type { Scenario, ScenarioDifficulty } from "@/types";
 import { DIFFICULTY_LABELS } from "@/types";
 import Link from "next/link";
 import { VoiceOrb } from "@/components/voice-orb";
+import { ClueChecklist } from "./clue-checklist";
 
 interface Props { scenario: Scenario; userId: string; }
 type Phase = "briefing" | "chat" | "feedback";
@@ -186,6 +187,8 @@ export function VoiceChat({ scenario, userId: _userId }: Props) {
         </Link>
         <span className="text-white/70 text-sm font-medium">{scenario.name}</span>
       </div>
+
+      <ClueChecklist hints={hints} />
 
       <div className="flex-1 flex flex-col items-center justify-center gap-8 px-6">
         {transcript && (
