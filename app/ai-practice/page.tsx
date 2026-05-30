@@ -113,7 +113,7 @@ export default async function AIPracticePage() {
 
           if (mode.href) {
             return (
-              <Link key={mode.title} href={mode.href}>
+              <Link key={mode.title} href={mode.href} className="block">
                 {card}
               </Link>
             );
@@ -123,10 +123,6 @@ export default async function AIPracticePage() {
 
         {/* Scenarios list */}
         <div>
-          <p className="text-sm font-semibold text-muted-foreground mb-3">
-            תרחישים מובנים
-          </p>
-
           {scenarios.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground text-center">
               <Zap className="size-12 mb-3 opacity-30" />
