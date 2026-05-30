@@ -4,6 +4,17 @@ import { NextRequest, NextResponse } from "next/server";
 // Cached voice ID fetched from ElevenLabs account (resets on server restart)
 let cachedVoiceId: string | null = null;
 
+// Stable per-text seed (FNV-1a → uint32) so the same text renders the same
+// audio on every request, instead of a fresh generative variation each time.
+function textSeed(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) % 4294967295;
+}
+
 async function resolveVoiceId(apiKey: string): Promise<string | null> {
   if (cachedVoiceId) return cachedVoiceId;
 
@@ -66,6 +77,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         text: cleanText,
         model_id: "eleven_flash_v2_5",
+        seed: textSeed(cleanText),
         voice_settings: { stability: 0.5, similarity_boost: 0.75 },
       }),
     }
