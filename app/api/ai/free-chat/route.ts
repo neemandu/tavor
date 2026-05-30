@@ -1,5 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { streamScenarioChat } from "@/lib/claude";
+import {
+  buildKhalidFreePracticePrompt,
+  buildKhalidFreeConversationPrompt,
+} from "@/lib/khalid-character";
+import { loadAiConfig } from "@/lib/ai-config";
 import { NextRequest } from "next/server";
 import type { ChatMessage } from "@/types";
 
@@ -7,8 +12,6 @@ const enc = new TextEncoder();
 function sse(obj: unknown) {
   return enc.encode(`data: ${JSON.stringify(obj)}\n\n`);
 }
-
-const WORD_LIMIT = "ענה במשפט אחד קצר בלבד — עד 15 מילים בערבית.";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -21,10 +24,10 @@ export async function POST(request: NextRequest) {
     sessionType: "free_practice" | "free_conversation";
   };
 
-  const dialectBase = `אתה ערבי מעזה (عامية غزاوية). דבר ערבית עזתית-פלסטינית בלבד — אל תעבור לעברית, לאנגלית, או לערבית ספרותית. אם בן שיחתך לא מבין, חזור בניסוח פשוט יותר אך תישאר בערבית. ${WORD_LIMIT}`;
+  const cfg = await loadAiConfig();
   const systemPrompt = sessionType === "free_practice"
-    ? `${dialectBase} הסיטואציה: ${description ?? "שיחה יומיומית"}. פתח את השיחה באופן טבעי בהתאם לסיטואציה.`
-    : `${dialectBase} נהל שיחה יומיומית חופשית וידידותית. שאל שאלות, הגב בצורה אנושית וטבעית.`;
+    ? buildKhalidFreePracticePrompt(cfg.persona, cfg.freePractice, description ?? "שיחה יומיומית")
+    : buildKhalidFreeConversationPrompt(cfg.persona, cfg.freeConversation);
 
   if (!process.env.ANTHROPIC_API_KEY) {
     const stub = "مرحباً!";

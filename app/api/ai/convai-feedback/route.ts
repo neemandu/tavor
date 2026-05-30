@@ -2,12 +2,10 @@ export const maxDuration = 60;
 
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { generateFeedback } from "@/lib/claude";
+import { loadAiConfig } from "@/lib/ai-config";
 import { awardPoints } from "@/lib/award-points";
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 import type { ChatMessage } from "@/types";
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 async function fetchTranscript(conversationId: string): Promise<ChatMessage[]> {
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -45,6 +43,7 @@ export async function POST(request: NextRequest) {
   const adminSupabase = createAdminClient();
 
   try {
+    const cfg = await loadAiConfig();
     let feedbackText = "";
     let tokens = 0;
 
@@ -56,46 +55,15 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (scenario) {
-        const result = await generateFeedback(messages, scenario);
+        const result = await generateFeedback(messages, cfg.feedback, scenario.name);
         feedbackText = result.text;
         tokens = result.tokens;
         await awardPoints(userId, 10, "scenario_complete", { scenario_id: scenarioId });
       }
     } else {
-      const conversation = messages
-        .map((m) => `${m.role === "user" ? "חניך" : "AI"}: ${m.content}`)
-        .join("\n");
-
-      const feedbackPrompt = `נתח את השיחה הבאה בערבית. תן פידבק בעברית:
-
-השיחה:
-${conversation}
-
-תן פידבק מובנה עם כותרות ברורות:
-
-## חוזקות
-מה החניך עשה טוב בשיחה
-
-## נקודות לשיפור
-מה צריך שיפור ואיך
-
-## הערות דקדוקיות
-טעויות ספציפיות בדקדוק, מבנה משפט או בחירת מילים (ציין את הצורה הנכונה)
-
-## המלצות לתרגול
-על מה להתמקד בפעם הבאה
-
-היה ספציפי ומעודד.`;
-
-      const response = await anthropic.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 2048,
-        system: "אתה מורה לערבית. כתוב את כל התשובות שלך בעברית בלבד, ללא יוצא מן הכלל.",
-        messages: [{ role: "user", content: feedbackPrompt }],
-      });
-
-      feedbackText = response.content[0].type === "text" ? response.content[0].text : "";
-      tokens = response.usage.input_tokens + response.usage.output_tokens;
+      const result = await generateFeedback(messages, cfg.feedback);
+      feedbackText = result.text;
+      tokens = result.tokens;
     }
 
     await adminSupabase.from("ai_sessions").insert({

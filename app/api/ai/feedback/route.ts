@@ -1,5 +1,6 @@
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { generateFeedback } from "@/lib/claude";
+import { loadAiConfig } from "@/lib/ai-config";
 import { awardPoints } from "@/lib/award-points";
 import { NextRequest, NextResponse } from "next/server";
 import type { ChatMessage } from "@/types";
@@ -34,7 +35,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const { text, tokens } = await generateFeedback(messages, scenario);
+    const cfg = await loadAiConfig();
+    const { text, tokens } = await generateFeedback(messages, cfg.feedback, scenario.name);
     const now = new Date().toISOString();
 
     await adminSupabase.from("ai_sessions").insert({

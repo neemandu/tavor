@@ -1,5 +1,6 @@
 import { createClient, createAdminClient } from "@/lib/supabase/server"; // adminClient needed for scenario fetch (bypasses RLS)
 import { streamScenarioChat, buildScenarioSystemPrompt } from "@/lib/claude";
+import { loadAiConfig } from "@/lib/ai-config";
 import { NextRequest } from "next/server";
 import type { ChatMessage } from "@/types";
 
@@ -25,7 +26,8 @@ export async function POST(request: NextRequest) {
 
   if (!scenario) return new Response(JSON.stringify({ error: "תרחיש לא נמצא" }), { status: 404 });
 
-  const systemPrompt = buildScenarioSystemPrompt(scenario);
+  const cfg = await loadAiConfig();
+  const systemPrompt = buildScenarioSystemPrompt(scenario, cfg.persona);
 
   if (!process.env.ANTHROPIC_API_KEY) {
     const stub = "مرحباً!";

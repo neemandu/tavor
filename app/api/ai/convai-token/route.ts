@@ -4,6 +4,7 @@ import {
   buildKhalidFreePracticePrompt,
   buildKhalidFreeConversationPrompt,
 } from "@/lib/khalid-character";
+import { loadAiConfig } from "@/lib/ai-config";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -23,7 +24,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "ElevenLabs agent not configured" }, { status: 500 });
   }
 
-  let systemPrompt = buildKhalidFreeConversationPrompt();
+  const cfg = await loadAiConfig();
+  let systemPrompt = buildKhalidFreeConversationPrompt(cfg.persona, cfg.freeConversation);
 
   if (scenarioId) {
     const adminSupabase = createAdminClient();
@@ -35,6 +37,7 @@ export async function POST(request: NextRequest) {
     if (!scenario) return NextResponse.json({ error: "תרחיש לא נמצא" }, { status: 404 });
     const hints = (scenario.hints as string[] | null) ?? [];
     systemPrompt = buildKhalidScenarioPrompt(
+      cfg.persona,
       scenario.ai_instructions ?? "",
       scenario.name,
       scenario.student_role ?? "",
@@ -42,7 +45,7 @@ export async function POST(request: NextRequest) {
       scenario.voice_instructions ?? undefined
     );
   } else if (description) {
-    systemPrompt = buildKhalidFreePracticePrompt(description);
+    systemPrompt = buildKhalidFreePracticePrompt(cfg.persona, cfg.freePractice, description);
   }
 
   const res = await fetch(
