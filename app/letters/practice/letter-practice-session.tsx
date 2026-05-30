@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, ArrowLeft } from "lucide-react";
+import { CheckCircle2, XCircle, ArrowLeft, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   buildSession,
@@ -18,6 +18,7 @@ import {
 import type { ArabicLetter } from "@/lib/arabic-letters";
 import { MeetLetterCard } from "./meet-letter-card";
 import { invalidateLevelCache } from "@/components/student-shell";
+import { useTTS } from "@/hooks/use-tts";
 
 type Delta = { correct: number; attempts: number };
 const MAX_RESURFACE = 6;
@@ -28,6 +29,24 @@ function LetterGlyph({ id, className }: { id: string; className?: string }) {
     <span dir="rtl" lang="ar" className={className} style={arabicStyle}>
       {LETTER_BY_ID[id].arabic}
     </span>
+  );
+}
+
+// Small speaker button to hear the written Arabic text via TTS.
+function SpeakerButton({ text }: { text: string }) {
+  const { play, unlock } = useTTS();
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        unlock();
+        play(text, "ar");
+      }}
+      aria-label="השמע"
+      className="inline-flex items-center justify-center size-9 rounded-full border text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-95 transition-colors"
+    >
+      <Volume2 className="size-4" />
+    </button>
   );
 }
 
@@ -191,6 +210,9 @@ function FormCard({
         <div className="text-center text-7xl leading-none" dir="rtl" lang="ar" style={arabicStyle}>
           {q.glyph}
         </div>
+        <div className="flex justify-center">
+          <SpeakerButton text={q.glyph} />
+        </div>
 
         <div className="grid grid-cols-2 gap-3">
           {q.choices.map((id) => {
@@ -217,6 +239,19 @@ function FormCard({
             );
           })}
         </div>
+
+        {answered && selected === q.letterId && (
+          <p className="text-center text-sm font-semibold text-green-600">נכון!</p>
+        )}
+        {answered && selected !== q.letterId && (
+          <p className="text-center text-sm font-semibold text-red-600">
+            התשובה הנכונה:{" "}
+            <span dir="rtl" lang="ar" style={arabicStyle} className="text-lg align-middle">
+              {LETTER_BY_ID[q.letterId].arabic}
+            </span>{" "}
+            ({LETTER_BY_ID[q.letterId].nameHe})
+          </p>
+        )}
 
         {answered && (
           <Button className="w-full" onClick={onNext}>
@@ -245,6 +280,7 @@ function ClusterCard({
   const pos = progress.length;
   const done = pos >= q.sequence.length;
   const [flash, setFlash] = useState<string | null>(null);
+  const [flashCorrect, setFlashCorrect] = useState<string | null>(null);
 
   function tap(id: string) {
     if (done) return;
@@ -255,9 +291,13 @@ function ClusterCard({
       setProgress((p) => [...p, "correct"]);
     } else {
       onMiss(expected);
+      // flash the wrong tap red and the correct letter green, then advance
       setFlash(id);
-      setTimeout(() => setFlash(null), 350);
-      // reveal correct letter and advance the position
+      setFlashCorrect(expected);
+      setTimeout(() => {
+        setFlash(null);
+        setFlashCorrect(null);
+      }, 700);
       setProgress((p) => [...p, "wrong"]);
     }
   }
@@ -270,6 +310,9 @@ function ClusterCard({
         </p>
         <div className="text-center text-6xl leading-none" dir="rtl" lang="ar" style={arabicStyle}>
           {q.cluster}
+        </div>
+        <div className="flex justify-center">
+          <SpeakerButton text={q.cluster} />
         </div>
 
         {/* revealed sequence so far */}
@@ -304,6 +347,7 @@ function ClusterCard({
                 "flex flex-col items-center gap-1 rounded-xl border p-3 transition-colors",
                 !done && "hover:bg-muted/60 active:scale-95",
                 flash === id && "border-red-400 bg-red-50 dark:bg-red-950/20",
+                flashCorrect === id && "border-green-400 bg-green-50 dark:bg-green-950/20",
                 done && "opacity-50"
               )}
             >
