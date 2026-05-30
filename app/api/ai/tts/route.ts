@@ -39,8 +39,8 @@ async function resolveVoiceId(apiKey: string): Promise<string | null> {
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "לא מחובר" }, { status: 401 });
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return NextResponse.json({ error: "לא מחובר" }, { status: 401 });
 
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) {

@@ -10,6 +10,10 @@ function stripEmojis(text: string) {
   return text.replace(/\p{Emoji_Presentation}/gu, "").replace(/\p{Emoji}️/gu, "").trim();
 }
 
+// Cache generated audio by text so repeated plays are instant. The TTS route
+// uses a deterministic seed, so identical text → identical audio.
+const blobCache = new Map<string, Blob>();
+
 export function useTTS() {
   // One persistent <audio> element — unlock it once in a user gesture,
   // then reuse for all TTS so iOS never blocks subsequent plays.
@@ -29,6 +33,9 @@ export function useTTS() {
   }, []);
 
   const fetchAudio = useCallback((text: string, showError = false): Promise<string | null> => {
+    const cached = blobCache.get(text);
+    if (cached) return Promise.resolve(URL.createObjectURL(cached));
+
     const { signal } = controllerRef.current;
     return fetch("/api/ai/tts", {
       method: "POST",
@@ -42,6 +49,7 @@ export function useTTS() {
           return null;
         }
         const blob = await res.blob();
+        blobCache.set(text, blob);
         return URL.createObjectURL(blob);
       })
       .catch(() => null);
