@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Home, BookOpen, Mic, Trophy, Grid2x2, LogOut } from "lucide-react";
+import { Home, BookOpen, Mic, Languages, Grid2x2, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -20,7 +20,7 @@ const navItems: NavItem[] = [
   { href: "/", label: "בית", icon: Home, exact: true },
   { href: "/vocabulary", label: "מילים", icon: BookOpen },
   { href: "/ai-practice", label: "תרגול", icon: Mic, center: true },
-  { href: "/leaderboard", label: "דירוג", icon: Trophy },
+  { href: "/letters", label: "אותיות", icon: Languages },
   { href: "/more", label: "עוד", icon: Grid2x2 },
 ];
 
