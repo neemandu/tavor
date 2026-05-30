@@ -11,7 +11,7 @@ import {
   type ScenarioDifficulty,
   type ScenarioCategory,
 } from "@/types";
-import { ChevronLeft, Zap, PenLine, MessageCircle, List } from "lucide-react";
+import { ChevronLeft, PenLine, MessageCircle, List } from "lucide-react";
 import { SessionHistory } from "./session-history";
 
 type ModeCard = {
@@ -123,13 +123,7 @@ export default async function AIPracticePage() {
 
         {/* Scenarios list */}
         <div>
-          {scenarios.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground text-center">
-              <Zap className="size-12 mb-3 opacity-30" />
-              <p>עדיין אין תרחישים פעילים</p>
-              <p className="text-sm">פנה למדריך שלך</p>
-            </div>
-          ) : (
+          {scenarios.length === 0 ? null : (
             <div className="space-y-3">
               {scenarios.map((scenario) => (
                 <Link key={scenario.id} href={`/ai-practice/${scenario.id}`}>
