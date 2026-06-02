@@ -19,10 +19,13 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await request.json() as {
-    arabic_text?: string;
+    hebrew_phonetic?: string;
+    arabic_text?: string | null;
     transliteration?: string | null;
     hebrew_translation?: string;
     category?: string | null;
+    semantic_field?: string | null;
+    chapter?: number | null;
     inflections?: Record<string, string> | null;
   };
 

@@ -24,28 +24,56 @@ export type Handbook = {
   created_at: string;
 };
 
+// Broad vocabulary categories (Hebrew). Raw source values (`semantic_field`)
+// are collapsed into these by lib/vocab-categories.ts. The values double as
+// their own display labels.
 export type VocabularyCategory =
-  | "security"
-  | "daily"
-  | "checkpoint"
-  | "interrogation"
-  | "other";
+  | "פעלים"
+  | "ביטויים ותגובות"
+  | "שאלות"
+  | "זמן וכמות"
+  | "מילות קישור ויחס"
+  | "תיאורים ותארים"
+  | "משפחה ואנשים"
+  | "מקומות ותחבורה"
+  | "חפצים ומזון"
+  | "ביטחון וצבא"
+  | "עבודה, מקצועות ומוסדות"
+  | "לימודים, דקדוק ומסמכים"
+  | "טבע, רפואה וגוף"
+  | "מושגים כלליים";
 
-export const CATEGORY_LABELS: Record<VocabularyCategory, string> = {
-  security: "ביטחוני",
-  daily: "יומיומי",
-  checkpoint: "מחסום",
-  interrogation: "חקירה",
-  other: "אחר",
-};
+export const VOCAB_CATEGORIES: VocabularyCategory[] = [
+  "פעלים",
+  "ביטויים ותגובות",
+  "שאלות",
+  "זמן וכמות",
+  "מילות קישור ויחס",
+  "תיאורים ותארים",
+  "משפחה ואנשים",
+  "מקומות ותחבורה",
+  "חפצים ומזון",
+  "ביטחון וצבא",
+  "עבודה, מקצועות ומוסדות",
+  "לימודים, דקדוק ומסמכים",
+  "טבע, רפואה וגוף",
+  "מושגים כלליים",
+];
+
+export const CATEGORY_LABELS: Record<VocabularyCategory, string> = Object.fromEntries(
+  VOCAB_CATEGORIES.map((c) => [c, c])
+) as Record<VocabularyCategory, string>;
 
 export type VocabularyWord = {
   id: string;
-  arabic_text: string;
+  arabic_text: string | null;
+  hebrew_phonetic: string;
   transliteration: string | null;
   hebrew_translation: string;
   inflections: Record<string, string> | null;
   category: VocabularyCategory | null;
+  semantic_field: string | null;
+  chapter: number | null;
   recording_path: string | null;
   created_by: string;
   created_at: string;

@@ -35,7 +35,7 @@ export function VocabularySearchBar({ defaultValue }: { defaultValue?: string })
       <Input
         value={value}
         onChange={handleChange}
-        placeholder="חיפוש בעברית או ערבית..."
+        placeholder="חיפוש מילה, תרגום או קטגוריה..."
         className="ps-9"
       />
     </div>

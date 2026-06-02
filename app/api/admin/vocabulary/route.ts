@@ -13,15 +13,18 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "אין הרשאה" }, { status: 403 });
 
   const body = await request.json() as {
-    arabic_text: string;
+    hebrew_phonetic: string;
     hebrew_translation: string;
+    arabic_text?: string | null;
     transliteration?: string | null;
     category?: string | null;
+    semantic_field?: string | null;
+    chapter?: number | null;
     inflections?: Record<string, string> | null;
     recording_path?: string | null;
   };
 
-  if (!body.arabic_text?.trim() || !body.hebrew_translation?.trim()) {
+  if (!body.hebrew_phonetic?.trim() || !body.hebrew_translation?.trim()) {
     return NextResponse.json({ error: "שדות חובה חסרים" }, { status: 400 });
   }
 

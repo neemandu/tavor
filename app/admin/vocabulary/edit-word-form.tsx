@@ -5,16 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CATEGORY_LABELS, type VocabularyCategory } from "@/types";
+import { CATEGORY_LABELS, VOCAB_CATEGORIES, type VocabularyCategory } from "@/types";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 interface WordProps {
   id: string;
-  arabic_text: string;
+  hebrew_phonetic: string;
   transliteration: string | null;
   hebrew_translation: string;
   category: string | null;
+  chapter: number | null;
   inflections: Record<string, string> | null;
 }
 
@@ -33,12 +34,13 @@ const INFLECTION_KEYS: { key: string; label: string }[] = [
 ];
 
 export function EditWordForm({ word, onClose }: Props) {
-  const [arabic, setArabic] = useState(word.arabic_text);
+  const [phonetic, setPhonetic] = useState(word.hebrew_phonetic);
   const [transliteration, setTransliteration] = useState(word.transliteration ?? "");
   const [hebrew, setHebrew] = useState(word.hebrew_translation);
   const [category, setCategory] = useState<VocabularyCategory | "">(
     (word.category as VocabularyCategory) ?? ""
   );
+  const [chapter, setChapter] = useState(word.chapter != null ? String(word.chapter) : "");
   const [inflections, setInflections] = useState<Record<string, string>>(
     word.inflections ?? {}
   );
@@ -51,7 +53,7 @@ export function EditWordForm({ word, onClose }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!arabic || !hebrew) return;
+    if (!phonetic || !hebrew) return;
     setLoading(true);
     try {
       const filteredInflections = Object.fromEntries(
@@ -62,10 +64,11 @@ export function EditWordForm({ word, onClose }: Props) {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          arabic_text: arabic,
+          hebrew_phonetic: phonetic,
           transliteration: transliteration || null,
           hebrew_translation: hebrew,
           category: category || null,
+          chapter: chapter && /^\d+$/.test(chapter) ? parseInt(chapter, 10) : null,
           inflections: Object.keys(filteredInflections).length > 0 ? filteredInflections : null,
         }),
       });
@@ -82,15 +85,14 @@ export function EditWordForm({ word, onClose }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="p-3 bg-muted/30 rounded-md space-y-3 border">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <div className="space-y-1">
-          <Label className="text-xs">ערבית *</Label>
+          <Label className="text-xs">מילה *</Label>
           <Input
-            value={arabic}
-            onChange={(e) => setArabic(e.target.value)}
+            value={phonetic}
+            onChange={(e) => setPhonetic(e.target.value)}
             dir="rtl"
-            lang="ar"
-            placeholder="كلمة"
+            placeholder="זַ׳אבֵט"
             required
           />
         </div>
@@ -100,7 +102,7 @@ export function EditWordForm({ word, onClose }: Props) {
             value={transliteration}
             onChange={(e) => setTransliteration(e.target.value)}
             dir="ltr"
-            placeholder="kalima"
+            placeholder="dabet"
           />
         </div>
         <div className="space-y-1">
@@ -108,7 +110,7 @@ export function EditWordForm({ word, onClose }: Props) {
           <Input
             value={hebrew}
             onChange={(e) => setHebrew(e.target.value)}
-            placeholder="מילה"
+            placeholder="קצין"
             required
           />
         </div>
@@ -121,11 +123,21 @@ export function EditWordForm({ word, onClose }: Props) {
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
+              {VOCAB_CATEGORIES.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
               ))}
             </SelectContent>
           </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">פרק</Label>
+          <Input
+            value={chapter}
+            onChange={(e) => setChapter(e.target.value)}
+            dir="ltr"
+            inputMode="numeric"
+            placeholder="1"
+          />
         </div>
       </div>
 

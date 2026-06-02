@@ -1,13 +1,18 @@
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import * as XLSX from "xlsx";
+import { mapSemanticField } from "@/lib/vocab-categories";
 
+// Column aliases. The headline word is the Arabic pronunciation in Hebrew
+// letters ("word"); "translation" is the Hebrew meaning.
 const EXPECTED_COLUMNS = {
-  arabic: ["arabic", "ערבית", "arabic_text", "عربي"],
-  hebrew: ["hebrew", "עברית", "hebrew_translation", "translation"],
-  transliteration: ["transliteration", "תעתיק", "phonetic"],
-  category: ["category", "קטגוריה"],
+  word: ["word", "מילה", "hebrew_phonetic", "מילה עברית"],
+  translation: ["translation", "תרגום", "hebrew", "עברית", "hebrew_translation"],
+  semantic_field: ["semantic_field", "תחום", "שדה סמנטי", "category", "קטגוריה"],
+  chapter: ["chapter", "פרק", "יחידה"],
 };
+
+const ZERO_UUID = "00000000-0000-0000-0000-000000000000";
 
 function detectColumn(headers: string[], candidates: string[]): number {
   return headers.findIndex((h) =>
@@ -27,6 +32,7 @@ export async function POST(request: NextRequest) {
 
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
+  const replace = formData.get("replace") === "true";
   if (!file) {
     return NextResponse.json({ error: "קובץ לא נמצא" }, { status: 400 });
   }
@@ -44,39 +50,42 @@ export async function POST(request: NextRequest) {
   }
 
   const headers = rows[0].map(String);
-  const arabicIdx = detectColumn(headers, EXPECTED_COLUMNS.arabic);
-  const hebrewIdx = detectColumn(headers, EXPECTED_COLUMNS.hebrew);
-  const transliterationIdx = detectColumn(headers, EXPECTED_COLUMNS.transliteration);
-  const categoryIdx = detectColumn(headers, EXPECTED_COLUMNS.category);
+  const wordIdx = detectColumn(headers, EXPECTED_COLUMNS.word);
+  const translationIdx = detectColumn(headers, EXPECTED_COLUMNS.translation);
+  const fieldIdx = detectColumn(headers, EXPECTED_COLUMNS.semantic_field);
+  const chapterIdx = detectColumn(headers, EXPECTED_COLUMNS.chapter);
 
-  if (arabicIdx === -1 || hebrewIdx === -1) {
+  if (wordIdx === -1 || translationIdx === -1) {
     return NextResponse.json(
       {
         error:
-          'עמודות חובה לא נמצאו. נדרשות עמודות "arabic" ו-"hebrew" (או המקבילות בעברית)',
+          'עמודות חובה לא נמצאו. נדרשות עמודות "word" ו-"translation" (או "מילה" ו-"תרגום")',
       },
       { status: 400 }
     );
   }
 
-  const validCategories = new Set([
-    "security",
-    "daily",
-    "checkpoint",
-    "interrogation",
-    "other",
-  ]);
-
   const records = rows
     .slice(1)
-    .filter((row) => row[arabicIdx]?.toString().trim() && row[hebrewIdx]?.toString().trim())
+    .filter(
+      (row) =>
+        row[wordIdx]?.toString().trim() &&
+        row[translationIdx]?.toString().trim()
+    )
     .map((row) => {
-      const cat = row[categoryIdx]?.toString().trim().toLowerCase();
+      const rawField =
+        fieldIdx >= 0 ? row[fieldIdx]?.toString().trim() || null : null;
+      const chapterRaw =
+        chapterIdx >= 0 ? row[chapterIdx]?.toString().trim() : "";
+      const chapter = chapterRaw && /^\d+$/.test(chapterRaw)
+        ? parseInt(chapterRaw, 10)
+        : null;
       return {
-        arabic_text: row[arabicIdx].toString().trim(),
-        hebrew_translation: row[hebrewIdx].toString().trim(),
-        transliteration: transliterationIdx >= 0 ? row[transliterationIdx]?.toString().trim() || null : null,
-        category: cat && validCategories.has(cat) ? cat : null,
+        hebrew_phonetic: row[wordIdx].toString().trim(),
+        hebrew_translation: row[translationIdx].toString().trim(),
+        semantic_field: rawField,
+        category: mapSemanticField(rawField),
+        chapter,
         created_by: user.id,
       };
     });
@@ -86,9 +95,26 @@ export async function POST(request: NextRequest) {
   }
 
   const adminSupabase = createAdminClient();
-  const { error } = await adminSupabase.from("vocabulary").insert(records);
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+
+  if (replace) {
+    const { error: delError } = await adminSupabase
+      .from("vocabulary")
+      .delete()
+      .neq("id", ZERO_UUID);
+    if (delError) {
+      return NextResponse.json({ error: delError.message }, { status: 500 });
+    }
+  }
+
+  // Insert in batches to stay within request limits.
+  const BATCH = 500;
+  for (let i = 0; i < records.length; i += BATCH) {
+    const { error } = await adminSupabase
+      .from("vocabulary")
+      .insert(records.slice(i, i + BATCH));
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ imported: records.length });

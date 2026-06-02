@@ -629,3 +629,31 @@ CREATE TABLE IF NOT EXISTS public.app_config (
 );
 
 ALTER TABLE public.app_config ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================
+-- Migration 0004: Hebrew-phonetic vocabulary format
+-- ============================================================
+-- The vocabulary source has no Arabic script; the headline word is the Arabic
+-- pronunciation in Hebrew letters (hebrew_phonetic). Categories are broad
+-- Hebrew buckets (see lib/vocab-categories.ts); raw semantic_field + chapter
+-- are kept too. Idempotent — safe to re-run.
+
+ALTER TABLE public.vocabulary ALTER COLUMN arabic_text DROP NOT NULL;
+ALTER TABLE public.vocabulary ADD COLUMN IF NOT EXISTS hebrew_phonetic TEXT;
+ALTER TABLE public.vocabulary ADD COLUMN IF NOT EXISTS semantic_field TEXT;
+ALTER TABLE public.vocabulary ADD COLUMN IF NOT EXISTS chapter INT;
+
+-- Drop the old English category CHECK; allowed values now enforced in code
+-- (a Hebrew IN-list is unsafe to paste into the Supabase SQL Editor).
+ALTER TABLE public.vocabulary DROP CONSTRAINT IF EXISTS vocabulary_category_check;
+
+DROP INDEX IF EXISTS public.vocabulary_search_idx;
+CREATE INDEX IF NOT EXISTS vocabulary_search_idx
+  ON public.vocabulary USING gin(
+    to_tsvector('simple',
+      coalesce(hebrew_phonetic,'') || ' ' ||
+      coalesce(hebrew_translation,'') || ' ' ||
+      coalesce(semantic_field,'') || ' ' ||
+      coalesce(arabic_text,'')
+    )
+  );

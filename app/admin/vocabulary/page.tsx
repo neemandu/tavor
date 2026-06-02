@@ -13,7 +13,7 @@ export default async function AdminVocabularyPage() {
 
   const { data: wordsData } = await supabase
     .from("vocabulary")
-    .select("id, arabic_text, transliteration, hebrew_translation, category, recording_path, inflections")
+    .select("id, hebrew_phonetic, transliteration, hebrew_translation, category, chapter, recording_path, inflections")
     .order("created_at", { ascending: false })
     .limit(100);
   const words = wordsData ?? [];

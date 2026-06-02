@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CATEGORY_LABELS, type VocabularyCategory } from "@/types";
+import { CATEGORY_LABELS, VOCAB_CATEGORIES, type VocabularyCategory } from "@/types";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -20,10 +20,11 @@ const INFLECTION_KEYS: { key: string; label: string }[] = [
 ];
 
 export function AddWordForm() {
-  const [arabic, setArabic] = useState("");
+  const [word, setWord] = useState("");
   const [transliteration, setTransliteration] = useState("");
   const [hebrew, setHebrew] = useState("");
   const [category, setCategory] = useState<VocabularyCategory | "">("");
+  const [chapter, setChapter] = useState("");
   const [inflections, setInflections] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -34,7 +35,7 @@ export function AddWordForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!arabic || !hebrew) return;
+    if (!word || !hebrew) return;
     setLoading(true);
     try {
       const filteredInflections = Object.fromEntries(
@@ -44,19 +45,21 @@ export function AddWordForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          arabic_text: arabic,
+          hebrew_phonetic: word,
           transliteration: transliteration || null,
           hebrew_translation: hebrew,
           category: category || null,
+          chapter: chapter && /^\d+$/.test(chapter) ? parseInt(chapter, 10) : null,
           inflections: Object.keys(filteredInflections).length > 0 ? filteredInflections : null,
         }),
       });
       if (!res.ok) throw new Error(await res.text());
       toast.success("מילה נוספה בהצלחה");
-      setArabic("");
+      setWord("");
       setTransliteration("");
       setHebrew("");
       setCategory("");
+      setChapter("");
       setInflections({});
       router.refresh();
     } catch {
@@ -68,15 +71,14 @@ export function AddWordForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <div className="space-y-1">
-          <Label className="text-xs">ערבית *</Label>
+          <Label className="text-xs">מילה *</Label>
           <Input
-            value={arabic}
-            onChange={(e) => setArabic(e.target.value)}
+            value={word}
+            onChange={(e) => setWord(e.target.value)}
             dir="rtl"
-            lang="ar"
-            placeholder="كلمة"
+            placeholder="זַ׳אבֵט"
             required
           />
         </div>
@@ -86,7 +88,7 @@ export function AddWordForm() {
             value={transliteration}
             onChange={(e) => setTransliteration(e.target.value)}
             dir="ltr"
-            placeholder="kalima"
+            placeholder="dabet"
           />
         </div>
         <div className="space-y-1">
@@ -94,7 +96,7 @@ export function AddWordForm() {
           <Input
             value={hebrew}
             onChange={(e) => setHebrew(e.target.value)}
-            placeholder="מילה"
+            placeholder="קצין"
             required
           />
         </div>
@@ -107,11 +109,21 @@ export function AddWordForm() {
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
+              {VOCAB_CATEGORIES.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
               ))}
             </SelectContent>
           </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">פרק</Label>
+          <Input
+            value={chapter}
+            onChange={(e) => setChapter(e.target.value)}
+            dir="ltr"
+            inputMode="numeric"
+            placeholder="1"
+          />
         </div>
       </div>
 

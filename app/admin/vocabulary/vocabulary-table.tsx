@@ -12,10 +12,11 @@ import { RecordingUpload } from "./recording-upload";
 
 interface Word {
   id: string;
-  arabic_text: string;
+  hebrew_phonetic: string;
   transliteration: string | null;
   hebrew_translation: string;
   category: string | null;
+  chapter: number | null;
   recording_path: string | null;
   inflections: Record<string, string> | null;
 }
@@ -51,10 +52,11 @@ export function VocabularyTable({ words }: Props) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b bg-muted/40">
-            <th className="p-2.5 text-start font-medium">ערבית</th>
+            <th className="p-2.5 text-start font-medium">מילה</th>
             <th className="p-2.5 text-start font-medium hidden md:table-cell">תעתיק</th>
             <th className="p-2.5 text-start font-medium">עברית</th>
             <th className="p-2.5 text-start font-medium hidden sm:table-cell">קטגוריה</th>
+            <th className="p-2.5 text-start font-medium hidden md:table-cell">פרק</th>
             <th className="p-2.5 text-start font-medium hidden sm:table-cell">הקלטה</th>
             <th className="p-2.5 text-start font-medium">פעולות</th>
           </tr>
@@ -63,13 +65,8 @@ export function VocabularyTable({ words }: Props) {
           {words.map((w) => (
             <React.Fragment key={w.id}>
               <tr className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                <td
-                  className="p-2.5 font-medium text-base"
-                  dir="rtl"
-                  lang="ar"
-                  style={{ fontFamily: "var(--font-noto-arabic)" }}
-                >
-                  {w.arabic_text}
+                <td className="p-2.5 font-medium text-base" dir="rtl">
+                  {w.hebrew_phonetic}
                 </td>
                 <td className="p-2.5 text-muted-foreground italic text-xs hidden md:table-cell" dir="ltr">
                   {w.transliteration ?? "—"}
@@ -78,11 +75,14 @@ export function VocabularyTable({ words }: Props) {
                 <td className="p-2.5 hidden sm:table-cell">
                   {w.category ? (
                     <Badge variant="outline" className="text-xs">
-                      {CATEGORY_LABELS[w.category as VocabularyCategory]}
+                      {CATEGORY_LABELS[w.category as VocabularyCategory] ?? w.category}
                     </Badge>
                   ) : (
                     <span className="text-muted-foreground">—</span>
                   )}
+                </td>
+                <td className="p-2.5 hidden md:table-cell text-muted-foreground">
+                  {w.chapter ?? "—"}
                 </td>
                 <td className="p-2.5 hidden sm:table-cell">
                   <RecordingUpload wordId={w.id} hasRecording={!!w.recording_path} />
@@ -115,7 +115,7 @@ export function VocabularyTable({ words }: Props) {
               </tr>
               {editingId === w.id && (
                 <tr className="border-b last:border-0 bg-muted/20">
-                  <td colSpan={6} className="p-3 bg-muted/20">
+                  <td colSpan={7} className="p-3 bg-muted/20">
                     <EditWordForm
                       word={w}
                       onClose={() => setEditingId(null)}
