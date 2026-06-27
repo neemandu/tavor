@@ -10,6 +10,7 @@ import {
   Brain,
   GraduationCap,
   Globe,
+  Clapperboard,
   Sparkles,
   Settings,
   LogOut,
@@ -28,6 +29,7 @@ const navItems = [
   { href: "/admin/exams", label: "מבחנים", icon: FileText },
   { href: "/admin/scenarios", label: "תרחישים", icon: Brain },
   { href: "/admin/enrichment", label: "העשרה", icon: Globe },
+  { href: "/admin/letters-videos", label: "סרטוני אותיות", icon: Clapperboard },
   { href: "/admin/ai", label: "הנחיות AI", icon: Sparkles },
   { href: "/admin/settings", label: "הגדרות", icon: Settings },
 ];

@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, Clapperboard } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { StudentShell } from "@/components/student-shell";
 import { Button } from "@/components/ui/button";
@@ -41,12 +41,20 @@ export default async function LettersPage() {
         </div>
 
         {/* Practice CTA */}
-        <Link href="/letters/practice">
-          <Button className="w-full gap-2" size="lg">
-            <GraduationCap className="size-5" />
-            תרגול זיהוי
-          </Button>
-        </Link>
+        <div className="space-y-2">
+          <Link href="/letters/practice">
+            <Button className="w-full gap-2" size="lg">
+              <GraduationCap className="size-5" />
+              תרגול זיהוי
+            </Button>
+          </Link>
+          <Link href="/letters/videos">
+            <Button variant="outline" className="w-full gap-2" size="lg">
+              <Clapperboard className="size-5" />
+              למידה מסרטונים
+            </Button>
+          </Link>
+        </div>
 
         {/* Progress */}
         <div className="space-y-1.5">
