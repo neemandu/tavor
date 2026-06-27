@@ -10,7 +10,7 @@ import {
   extractPlaylistId,
   buildPlaylistEmbedUrl,
   DEFAULT_PLAYLIST_URL,
-} from "@/lib/letters-video-config";
+} from "@/lib/letters-video";
 
 export function LettersVideoForm({ initialUrl }: { initialUrl: string }) {
   const [url, setUrl] = useState(initialUrl);

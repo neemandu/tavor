@@ -1,6 +1,6 @@
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
-import { LETTERS_PLAYLIST_KEY, extractPlaylistId } from "@/lib/letters-video-config";
+import { LETTERS_PLAYLIST_KEY, extractPlaylistId } from "@/lib/letters-video";
 
 async function requireAdmin() {
   const supabase = await createClient();
