@@ -1,14 +1,20 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Volume2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Volume2, Clock } from "lucide-react";
 import { useTTS } from "@/hooks/use-tts";
 import { useConvai } from "@/hooks/use-convai";
 import { VoiceOrb } from "@/components/voice-orb";
+
+const TOTAL_SECONDS = 4 * 60;
+function formatTime(s: number) {
+  return `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
+}
 
 interface Props { userId: string; }
 type Phase = "setup" | "chat" | "feedback";
@@ -21,10 +27,13 @@ export function FreeChatInterface({ userId: _userId }: Props) {
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [systemPrompt, setSystemPrompt] = useState<string | undefined>();
   const [starting, setStarting] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(TOTAL_SECONDS);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { play: playTTS, stop: stopTTS, isPlaying } = useTTS();
 
   const handleConversationEnd = useCallback(async (conversationId: string) => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     setLoadingFeedback(true);
     stopTTS();
     try {
@@ -60,10 +69,11 @@ export function FreeChatInterface({ userId: _userId }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ description: description.trim(), sessionType: "free_practice" }),
       });
-      if (!res.ok) throw new Error("שגיאה בהתחברות");
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "שגיאה בהתחברות");
       setSystemPrompt(data.systemPrompt);
       setSignedUrl(data.signedUrl);
+      setTimeLeft(TOTAL_SECONDS);
       setPhase("chat");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "שגיאה");
@@ -71,6 +81,26 @@ export function FreeChatInterface({ userId: _userId }: Props) {
       setStarting(false);
     }
   }
+
+  // Countdown while in chat phase
+  useEffect(() => {
+    if (phase !== "chat") return;
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current!);
+          timerRef.current = null;
+          endSession();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
+  const isLowTime = timeLeft <= 30;
 
   // ── Setup ───────────────────────────────────────────────────────────────────
   if (phase === "setup") {
@@ -151,6 +181,12 @@ export function FreeChatInterface({ userId: _userId }: Props) {
     <div className="fixed inset-0 bg-[#0A0A0A] flex flex-col overflow-hidden">
       <div className="flex items-center gap-3 px-4 pt-12 pb-4">
         <span className="text-white/50 text-sm line-clamp-1">תרגול חופשי · {description}</span>
+        <div className="flex items-center gap-1.5 me-auto shrink-0">
+          <Clock className={cn("size-4", isLowTime ? "text-destructive" : "text-white/50")} />
+          <span className={cn("text-sm font-mono", isLowTime ? "text-destructive" : "text-white/50")}>
+            {formatTime(timeLeft)}
+          </span>
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center gap-8 px-6">

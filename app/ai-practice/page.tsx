@@ -1,11 +1,13 @@
 export const dynamic = "force-dynamic";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { StudentShell } from "@/components/student-shell";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { ChevronLeft, PenLine, MessageCircle, List } from "lucide-react";
 import { SessionHistory } from "./session-history";
+import { getRemainingAiCredits } from "@/lib/ai-credits";
 
 type ModeCard = {
   href: string | null;
@@ -34,7 +36,7 @@ const MODES: ModeCard[] = [
     href: "/ai-practice/conversation",
     icon: MessageCircle,
     title: "שיחה חופשית",
-    description: "שיחה פתוחה 30 דקות בערבית",
+    description: "שיחה פתוחה 4 דקות בערבית",
     accentColor: "border-s-indigo-500",
   },
 ];
@@ -45,6 +47,8 @@ export default async function AIPracticePage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  const credits = await getRemainingAiCredits(createAdminClient(), user!.id);
 
   const { data: sessionsData } = await supabase
     .from("ai_sessions")
@@ -68,9 +72,16 @@ export default async function AIPracticePage() {
   return (
     <StudentShell>
       <div className="p-4 max-w-lg mx-auto space-y-5">
-        <div className="pt-2">
-          <h1 className="text-3xl font-black">תרגול AI</h1>
-          <p className="text-sm text-muted-foreground">בחר מצב תרגול</p>
+        <div className="pt-2 flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-black">תרגול AI</h1>
+            <p className="text-sm text-muted-foreground">בחר מצב תרגול</p>
+          </div>
+          {credits && (
+            <Badge variant="secondary" className="shrink-0 whitespace-nowrap">
+              {credits.remaining} שיחות נותרו החודש
+            </Badge>
+          )}
         </div>
 
         {/* Mode cards — each is a direct child of the outer space-y-5 so gaps are uniform */}

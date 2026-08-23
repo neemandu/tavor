@@ -54,7 +54,7 @@ export async function createStudent(
     await adminSupabase.from("user_course_access").insert({ user_id: userId, course_id: courseId });
   }
 
-  await adminSupabase.from("ai_credits").insert({ user_id: userId, monthly_limit: 30, current_month_usage: 0 });
+  await adminSupabase.from("ai_credits").insert({ user_id: userId, monthly_limit: 10, current_month_usage: 0 });
 
   return { ok: true, id: userId };
 }

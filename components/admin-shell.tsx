@@ -12,6 +12,7 @@ import {
   Globe,
   Clapperboard,
   Sparkles,
+  MessagesSquare,
   Settings,
   LogOut,
   Menu,
@@ -31,6 +32,7 @@ const navItems = [
   { href: "/admin/enrichment", label: "העשרה", icon: Globe },
   { href: "/admin/letters-videos", label: "סרטוני אותיות", icon: Clapperboard },
   { href: "/admin/ai", label: "הנחיות AI", icon: Sparkles },
+  { href: "/admin/feedback", label: "פידבקים", icon: MessagesSquare },
   { href: "/admin/settings", label: "הגדרות", icon: Settings },
 ];
 

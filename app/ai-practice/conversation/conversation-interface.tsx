@@ -9,23 +9,46 @@ import { cn } from "@/lib/utils";
 import { useTTS } from "@/hooks/use-tts";
 import { useConvai } from "@/hooks/use-convai";
 import { VoiceOrb } from "@/components/voice-orb";
+import Link from "next/link";
 
-const TOTAL_SECONDS = 30 * 60;
+const TOTAL_SECONDS = 4 * 60;
 function formatTime(s: number) {
   return `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 }
 
 interface Props { userId: string; }
-type Phase = "chat" | "feedback";
+type Phase = "chat" | "feedback" | "blocked";
 
 export function ConversationInterface({ userId: _userId }: Props) {
   const [phase, setPhase] = useState<Phase>("chat");
+  const [blockedMessage, setBlockedMessage] = useState("");
   const [feedback, setFeedback] = useState("");
   const [loadingFeedback, setLoadingFeedback] = useState(false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [systemPrompt, setSystemPrompt] = useState<string | undefined>();
   const [timeLeft, setTimeLeft] = useState(TOTAL_SECONDS);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startSession = useCallback(async () => {
+    try {
+      const res = await fetch("/api/ai/convai-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionType: "free_conversation" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setBlockedMessage(data.error ?? "שגיאה בהתחברות");
+        setPhase("blocked");
+        return;
+      }
+      setSystemPrompt(data.systemPrompt);
+      setSignedUrl(data.signedUrl);
+    } catch {
+      setBlockedMessage("שגיאה בהתחברות");
+      setPhase("blocked");
+    }
+  }, []);
 
   const { play: playTTS, stop: stopTTS, isPlaying } = useTTS();
 
@@ -59,15 +82,8 @@ export function ConversationInterface({ userId: _userId }: Props) {
 
   // Start immediately on mount
   useEffect(() => {
-    fetch("/api/ai/convai-token", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionType: "free_conversation" }),
-    })
-      .then((r) => r.json())
-      .then((d) => { setSystemPrompt(d.systemPrompt); setSignedUrl(d.signedUrl); })
-      .catch(() => toast.error("שגיאה בהתחברות"));
-  }, []);
+    startSession();
+  }, [startSession]);
 
   // Timer
   useEffect(() => {
@@ -86,7 +102,21 @@ export function ConversationInterface({ userId: _userId }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const isLowTime = timeLeft <= 5 * 60;
+  const isLowTime = timeLeft <= 30;
+
+  // ── Blocked (quota exhausted / connection error) ───────────────────────────
+  if (phase === "blocked") {
+    return (
+      <div className="p-5 max-w-lg mx-auto space-y-5 pt-10">
+        <Card className="rounded-2xl">
+          <CardContent className="p-5 text-sm leading-relaxed">{blockedMessage}</CardContent>
+        </Card>
+        <Link href="/ai-practice">
+          <Button variant="outline" className="w-full rounded-xl">חזרה</Button>
+        </Link>
+      </div>
+    );
+  }
 
   // ── Feedback ────────────────────────────────────────────────────────────────
   if (phase === "feedback") {
@@ -122,15 +152,7 @@ export function ConversationInterface({ userId: _userId }: Props) {
             setFeedback("");
             setTimeLeft(TOTAL_SECONDS);
             setSignedUrl(null);
-            // Restart session
-            fetch("/api/ai/convai-token", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ sessionType: "free_conversation" }),
-            })
-              .then((r) => r.json())
-              .then((d) => { setSystemPrompt(d.systemPrompt); setSignedUrl(d.signedUrl); })
-              .catch(() => toast.error("שגיאה בהתחברות"));
+            startSession();
           }}
         >
           שיחה חדשה

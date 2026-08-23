@@ -5,6 +5,7 @@ import { StudentShell } from "@/components/student-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { levelProgress } from "@/lib/levels";
+import { getRemainingAiCredits } from "@/lib/ai-credits";
 import Link from "next/link";
 import { BookOpen, Search, FileText, Languages, Mic } from "lucide-react";
 
@@ -19,7 +20,7 @@ const QUICK_ACTIONS = [
   {
     href: "/ai-practice/conversation",
     label: "שיחה קולית",
-    sublabel: "שיחה חופשית 30 דק'",
+    sublabel: "שיחה חופשית 4 דק'",
     icon: Mic,
     bg: "from-primary/90 to-primary",
     textColor: "text-white",
@@ -59,12 +60,8 @@ export default async function StudentHome() {
   const name = (user?.user_metadata?.name as string) ?? "חניך";
   const adminSupabase = createAdminClient();
 
-  const [{ data: credits }, { data: accessData }] = await Promise.all([
-    supabase
-      .from("ai_credits")
-      .select("monthly_limit, current_month_usage")
-      .eq("user_id", user!.id)
-      .maybeSingle(),
+  const [credits, { data: accessData }] = await Promise.all([
+    getRemainingAiCredits(adminSupabase, user!.id),
     adminSupabase
       .from("user_course_access")
       .select("course_id")
@@ -95,9 +92,7 @@ export default async function StudentHome() {
     }
   }
 
-  const creditsLeft = credits
-    ? credits.monthly_limit - credits.current_month_usage
-    : null;
+  const creditsLeft = credits ? credits.remaining : null;
 
   return (
     <StudentShell>

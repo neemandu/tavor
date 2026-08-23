@@ -1,17 +1,23 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useTTS } from "@/hooks/use-tts";
 import { useConvai } from "@/hooks/use-convai";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ChevronDown, ChevronUp, ArrowRight, Volume2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { ChevronDown, ChevronUp, ArrowRight, Volume2, Clock } from "lucide-react";
 import type { Scenario, ScenarioDifficulty } from "@/types";
 import { DIFFICULTY_LABELS } from "@/types";
 import Link from "next/link";
 import { VoiceOrb } from "@/components/voice-orb";
 import { ClueChecklist } from "./clue-checklist";
+
+const TOTAL_SECONDS = 4 * 60;
+function formatTime(s: number) {
+  return `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
+}
 
 interface Props { scenario: Scenario; userId: string; }
 type Phase = "briefing" | "chat" | "feedback";
@@ -24,10 +30,13 @@ export function VoiceChat({ scenario, userId: _userId }: Props) {
   const [systemPrompt, setSystemPrompt] = useState<string | undefined>();
   const [starting, setStarting] = useState(false);
   const [hintsOpen, setHintsOpen] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(TOTAL_SECONDS);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { play: playTTS, stop: stopTTS, isPlaying } = useTTS();
 
   const handleConversationEnd = useCallback(async (conversationId: string) => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     setLoadingFeedback(true);
     stopTTS();
     try {
@@ -62,10 +71,11 @@ export function VoiceChat({ scenario, userId: _userId }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ scenarioId: scenario.id, sessionType: "scenario" }),
       });
-      if (!res.ok) throw new Error("שגיאה בהתחברות");
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "שגיאה בהתחברות");
       setSystemPrompt(data.systemPrompt);
       setSignedUrl(data.signedUrl);
+      setTimeLeft(TOTAL_SECONDS);
       setPhase("chat");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "שגיאה");
@@ -73,6 +83,26 @@ export function VoiceChat({ scenario, userId: _userId }: Props) {
       setStarting(false);
     }
   }
+
+  // Countdown while in chat phase
+  useEffect(() => {
+    if (phase !== "chat") return;
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current!);
+          timerRef.current = null;
+          endSession();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
+  const isLowTime = timeLeft <= 30;
 
   const hints = (scenario.hints as string[] | null) ?? [];
   const difficultyColors: Record<string, string> = {
@@ -186,6 +216,12 @@ export function VoiceChat({ scenario, userId: _userId }: Props) {
           <ArrowRight className="size-5" />
         </Link>
         <span className="text-white/70 text-sm font-medium">{scenario.name}</span>
+        <div className="flex items-center gap-1.5 me-auto">
+          <Clock className={cn("size-4", isLowTime ? "text-destructive" : "text-white/50")} />
+          <span className={cn("text-sm font-mono", isLowTime ? "text-destructive" : "text-white/50")}>
+            {formatTime(timeLeft)}
+          </span>
+        </div>
       </div>
 
       <ClueChecklist hints={hints} />

@@ -5,6 +5,7 @@ import {
   buildKhalidFreeConversationPrompt,
 } from "@/lib/khalid-character";
 import { loadAiConfig } from "@/lib/ai-config";
+import { consumeAiCredit } from "@/lib/ai-credits";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -60,6 +61,22 @@ export async function POST(request: NextRequest) {
   }
 
   const { signed_url } = await res.json();
+
+  // Consume quota only now that we know the session can actually start, so an
+  // ElevenLabs/config failure above doesn't burn a student's monthly talk.
+  const credit = await consumeAiCredit(createAdminClient(), session.user.id);
+  if (!credit.allowed) {
+    return NextResponse.json(
+      { error: `הגעת למכסת ${credit.limit} השיחות החודשית. המכסה מתאפסת בתחילת החודש הבא.` },
+      { status: 403 }
+    );
+  }
+
   // System prompt is returned to client and applied as an override in the WebSocket handshake
-  return NextResponse.json({ signedUrl: signed_url, systemPrompt, sessionType });
+  return NextResponse.json({
+    signedUrl: signed_url,
+    systemPrompt,
+    sessionType,
+    creditsRemaining: credit.remaining,
+  });
 }

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { levelFromXp } from "@/lib/levels";
 import { ChangePasswordForm } from "./change-password-form";
+import { FeedbackCell } from "./feedback-cell";
 import Link from "next/link";
 import { ArrowRight, User } from "lucide-react";
 import { notFound } from "next/navigation";
@@ -220,11 +221,7 @@ export default async function StudentProfilePage({
                         {s.tokens_used?.toLocaleString("he-IL") ?? "—"}
                       </td>
                       <td className="p-3">
-                        {s.feedback_text ? (
-                          <span className="text-green-600">✓</span>
-                        ) : (
-                          <span className="text-muted-foreground">✗</span>
-                        )}
+                        <FeedbackCell feedbackText={s.feedback_text} />
                       </td>
                     </tr>
                   ))}
