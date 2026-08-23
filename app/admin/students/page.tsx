@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CreateStudentForm } from "./create-student-form";
+import { ImportStudentsForm } from "./import-students-form";
 import { Users, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
@@ -33,6 +34,8 @@ export default async function AdminStudentsPage() {
       </div>
 
       <CreateStudentForm courses={courses} />
+
+      <ImportStudentsForm courses={courses} />
 
       <Card>
         <CardHeader className="pb-3">

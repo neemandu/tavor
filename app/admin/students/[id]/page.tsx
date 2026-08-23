@@ -5,6 +5,7 @@ import { AdminShell } from "@/components/admin-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { levelFromXp } from "@/lib/levels";
+import { ChangePasswordForm } from "./change-password-form";
 import Link from "next/link";
 import { ArrowRight, User } from "lucide-react";
 import { notFound } from "next/navigation";
@@ -114,6 +115,9 @@ export default async function StudentProfilePage({
             </div>
           </div>
         </div>
+
+        {/* Change password */}
+        <ChangePasswordForm userId={studentData.id} />
 
         {/* Courses enrolled */}
         <Card>
